@@ -1,0 +1,58 @@
+[app]
+    project_version="0.0.1"
+    project_name="AIVideoTools"
+    log_level="DEBUG"
+    project_description="<a href='https://github.com/monkeyGeek369/AIVideoTools'>https://github.com/monkeyGeek369/AIVideoTools</a>"
+    
+    # 字幕提供商、可选，支持 whisper 和 faster-whisper-large-v2"whisper"
+    # 默认为 faster-whisper-large-v2 模型地址：https://huggingface.co/guillaumekln/faster-whisper-large-v2
+    subtitle_provider = "faster-whisper-large-v2"
+    subtitle_enabled = true
+
+    # ImageMagick
+    # 安装后，将自动检测到 ImageMagick，Windows 除外！
+    # 例如，在 Windows 上 "C:\Program Files (x86)\ImageMagick-7.1.1-Q16-HDRI\magick.exe"
+    # 下载位置 https://imagemagick.org/archive/binaries/ImageMagick-7.1.1-29-Q16-x64-static.exe
+    # imagemagick_path = "C:\\Program Files (x86)\\ImageMagick-7.1.1-Q16\\magick.exe"
+
+    # FFMPEG
+    #
+    # 通常情况下，ffmpeg 会被自动下载，并且会被自动检测到。
+    # 但是如果你的环境有问题，无法自动下载，可能会遇到如下错误：
+    #   RuntimeError: No ffmpeg exe could be found.
+    #   Install ffmpeg on your system, or set the IMAGEIO_FFMPEG_EXE environment variable.
+    # 此时你可以手动下载 ffmpeg 并设置 ffmpeg_path，下载地址：https://www.gyan.dev/ffmpeg/builds/
+
+    # ffmpeg_path = "C:\\Users\\harry\\Downloads\\ffmpeg.exe"
+    #########################################################################################
+
+    # Video material storage location
+    # material_directory = ""                    # Indicates that video materials will be downloaded to the default folder, the default folder is ./storage/cache_videos under the current project
+    # material_directory = "/user/harry/videos"  # Indicates that video materials will be downloaded to a specified folder
+    # material_directory = "task"                # Indicates that video materials will be downloaded to the current task's folder, this method does not allow sharing of already downloaded video materials
+    # 视频素材存放位置
+    # material_directory = ""                    #表示将视频素材下载到默认的文件夹，默认文件夹为当前项目下的 ./storage/cache_videos
+    # material_directory = "/user/harry/videos"  #表示将视频素材下载到指定的文件夹中
+    # material_directory = "task"                #表示将视频素材下载到当前任务的文件夹中，这种方式无法共享已经下载的视频素材
+    material_directory = ""
+
+    # 文生视频时的最大并发任务数
+    max_concurrent_tasks = 5
+
+[whisper]
+    # Only effective when subtitle_provider is "whisper"
+
+    # Run on GPU with FP16
+    # model = WhisperModel(model_size, device="cuda", compute_type="float16")
+
+    # Run on GPU with INT8
+    # model = WhisperModel(model_size, device="cuda", compute_type="int8_float16")
+
+    # Run on CPU with INT8
+    # model = WhisperModel(model_size, device="cpu", compute_type="int8")
+
+    # recommended model_size: "large-v3"
+    model_size="faster-whisper-large-v2"
+    # 如果要使用 GPU，请设置 device=“cuda”
+    device="CPU"
+    compute_type="int8"
