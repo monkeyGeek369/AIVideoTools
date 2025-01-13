@@ -1,0 +1,8 @@
+{
+  "Language": "English",
+  "Translation": {
+    "project_name": "AI Video Tools",
+    "project_description": "The goal of this open source project is to provide a lightweight video processing toolbox. It can be used to automate video editing with one click, including video clips, background sound processing, speech processing, subtitle processing, etc., and hope to help users quickly complete video editing with AI technology.",
+    "project_version": "v0.0.1"
+  }
+}

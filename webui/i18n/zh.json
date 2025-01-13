@@ -1,0 +1,8 @@
+{
+  "Language": "简体中文",
+  "Translation": {
+    "project_name": "AI视频工具箱",
+    "project_description": "本开源项目的宗旨是提供一套轻量级的视频处理工具箱。利用它可以一键进行自动化的视频编辑，包括视频剪辑、背景音处理、语音处理、字幕处理等，并希望借助AI技术，帮助用户快速完成视频编辑。",
+    "project_version": "v0.0.1"
+  }
+}
