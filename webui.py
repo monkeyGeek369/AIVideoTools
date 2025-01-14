@@ -136,6 +136,7 @@ def page_layout():
     # control container
     global control_container
     control_container = st.container(border=True)
+    control_container.subheader(tr("control_container_subheader"))
 
 def tr(key):
     """翻译函数"""
@@ -158,12 +159,5 @@ def main():
     video_edit_settings.render_video_edit(tr,video_edit_column)
     control_panel_settings.render_control_panel(tr,control_container)
     
-
-
-
-
 if __name__ == "__main__":
     main()
-
-
-
