@@ -2,7 +2,12 @@ import streamlit as st
 import os,sys
 from app.config import config
 from app.utils import utils
-from uuid import uuid4
+from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings
+
+# global params
+video_meta_data_column = None
+video_edit_column=None
+control_container = None
 
 def init_log():
     """初始化日志配置"""
@@ -123,13 +128,14 @@ def page_layout():
 
     # video container
     video_container = st.container(border=True)
-    video_meta_data_column,video_result_column = video_container.columns(2)
-    video_meta_data_column.write("video_meta_data_column")
-    video_result_column.write("video_meta_data_column")
+    global video_meta_data_column,video_edit_column
+    video_meta_data_column,video_edit_column = video_container.columns([0.3,0.7],gap="small")
+    video_meta_data_column.subheader(tr("video_meta_data_column_subheader"))
+    video_edit_column.subheader(tr("video_edit_column_subheader"))
 
     # control container
+    global control_container
     control_container = st.container(border=True)
-    control_container.write(tr("project_version"))
 
 def tr(key):
     """翻译函数"""
@@ -146,6 +152,11 @@ def main():
 
     # page layout
     page_layout()
+
+    # render layout
+    video_meta_data_settings.render_video_meta_data(tr,video_meta_data_column)
+    video_edit_settings.render_video_edit(tr,video_edit_column)
+    control_panel_settings.render_control_panel(tr,control_container)
     
 
 
