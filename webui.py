@@ -1,7 +1,8 @@
 import streamlit as st
-import os,sys
+import os,sys,atexit
+from uuid import uuid4
 from app.config import config
-from app.utils import utils
+from app.utils import utils,file_utils
 from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings
 from streamlit.delta_generator import DeltaGenerator
 
@@ -141,11 +142,21 @@ def tr(key):
     loc = locales.get(st.session_state['ui_language'], {})
     return loc.get("Translation", {}).get(key, key)
 
+def init_task():
+    # generate uuid
+    task_id = utils.get_uuid(remove_hyphen=False)
+    # create task dir
+    task_path = utils.task_dir(sub_dir=task_id)
+    # store
+    st.session_state['task_path'] = task_path
+
+
 def main():
     # config init
     init_log()
     init_global_state()
     utils.init_resources()
+    init_task()
 
     # page layout
     video_meta_data_column,video_edit_column,control_container = page_layout()
@@ -154,6 +165,9 @@ def main():
     video_meta_data_settings.render_video_meta_data(tr,video_meta_data_column)
     video_edit_settings.render_video_edit(tr,video_edit_column)
     control_panel_settings.render_control_panel(tr,control_container)
+
+    # regitster
+    atexit.register(utils.cleanup_tasks)
     
 if __name__ == "__main__":
     main()

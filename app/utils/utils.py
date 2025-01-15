@@ -10,6 +10,7 @@ from uuid import uuid4
 import urllib3
 from datetime import datetime, timedelta
 from app.models import const
+from . import file_utils
 
 urllib3.disable_warnings()
 
@@ -484,3 +485,14 @@ def init_imagemagick():
     except Exception as e:
         logger.error(f"初始化 ImageMagick 失败: {str(e)}")
         return False
+
+def cleanup_tasks():
+    tasks_path = task_dir()
+    file_utils.cleanup_temp_files(tasks_path)
+
+def cleanup_disconnected_task():
+    if 'task_path' in st.session_state:
+        task_path = st.session_state['task_path']
+        file_utils.cleanup_temp_files(task_path)
+        del st.session_state['task_path']
+        # todo
