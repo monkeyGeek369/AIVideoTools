@@ -3,11 +3,7 @@ import os,sys
 from app.config import config
 from app.utils import utils
 from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings
-
-# global params
-video_meta_data_column = None
-video_edit_column=None
-control_container = None
+from streamlit.delta_generator import DeltaGenerator
 
 def init_log():
     """初始化日志配置"""
@@ -58,7 +54,7 @@ def init_log():
 def init_global_state():
     """初始化全局状态"""
     if 'ui_language' not in st.session_state:
-        st.session_state['ui_language'] = config.ui.get("language", utils.get_system_locale())
+        st.session_state['ui_language'] = utils.get_system_locale()
 
 def render_language_settings(st_container):
     """渲染语言设置"""
@@ -82,9 +78,8 @@ def render_language_settings(st_container):
     if selected_language:
         code = selected_language.split(" - ")[0].strip()
         st.session_state['ui_language'] = code
-        config.ui['language'] = code
 
-def page_layout():
+def page_layout() -> list[DeltaGenerator]:
     # set wide layout
     st.set_page_config(
         page_title=tr("project_name"),
@@ -128,15 +123,16 @@ def page_layout():
 
     # video container
     video_container = st.container(border=True)
-    global video_meta_data_column,video_edit_column
     video_meta_data_column,video_edit_column = video_container.columns([0.3,0.7],gap="small")
     video_meta_data_column.subheader(tr("video_meta_data_column_subheader"))
     video_edit_column.subheader(tr("video_edit_column_subheader"))
 
     # control container
-    global control_container
     control_container = st.container(border=True)
     control_container.subheader(tr("control_container_subheader"))
+
+    result = [video_meta_data_column,video_edit_column,control_container]
+    return result
 
 def tr(key):
     """翻译函数"""
@@ -152,7 +148,7 @@ def main():
     utils.init_resources()
 
     # page layout
-    page_layout()
+    video_meta_data_column,video_edit_column,control_container = page_layout()
 
     # render layout
     video_meta_data_settings.render_video_meta_data(tr,video_meta_data_column)
