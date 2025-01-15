@@ -493,6 +493,10 @@ def cleanup_tasks():
 def cleanup_disconnected_task():
     if 'task_path' in st.session_state:
         task_path = st.session_state['task_path']
-        file_utils.cleanup_temp_files(task_path)
+        if os.path.exists(task_path):
+            # delete file
+            file_utils.cleanup_temp_files(task_path)
+            # delete file path
+            os.remove(task_path)
         del st.session_state['task_path']
-        # todo
+

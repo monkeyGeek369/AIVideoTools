@@ -1,4 +1,5 @@
 from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
 
 
 def render_material_handler(tr,st_container:DeltaGenerator):
@@ -26,6 +27,7 @@ def render_material_handler(tr,st_container:DeltaGenerator):
     # create submit button
     submitted = material_handler_form.form_submit_button(label=tr("material_handler_submit"))
     if submitted:
+        print(st.session_state['task_path'])
         print(video_split_checkbox_value)
         print(voice_split_checkbox_value)
         print(subtitle_split_checkbox_value)

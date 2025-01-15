@@ -1,10 +1,13 @@
 import streamlit as st
-import os,sys,atexit
-from uuid import uuid4
+import os,sys
 from app.config import config
-from app.utils import utils,file_utils
+from app.utils import utils
 from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings
-from streamlit.delta_generator import DeltaGenerator
+
+# clean all tasks
+if len(config.ui) <= 0:
+    utils.cleanup_tasks()
+    config.ui['webui_started'] = True
 
 def init_log():
     """初始化日志配置"""
@@ -143,13 +146,13 @@ def tr(key):
     return loc.get("Translation", {}).get(key, key)
 
 def init_task():
-    # generate uuid
-    task_id = utils.get_uuid(remove_hyphen=False)
-    # create task dir
-    task_path = utils.task_dir(sub_dir=task_id)
-    # store
-    st.session_state['task_path'] = task_path
-
+    if not st.session_state.get('task_path'):
+        # generate uuid
+        task_id = utils.get_uuid(remove_hyphen=False)
+        # create task dir
+        task_path = utils.task_dir(sub_dir=task_id)
+        # store
+        st.session_state['task_path'] = task_path
 
 def main():
     # config init
@@ -165,9 +168,7 @@ def main():
     video_meta_data_settings.render_video_meta_data(tr,video_meta_data_column)
     video_edit_settings.render_video_edit(tr,video_edit_column)
     control_panel_settings.render_control_panel(tr,control_container)
-
-    # regitster
-    atexit.register(utils.cleanup_tasks)
     
 if __name__ == "__main__":
+    # run app
     main()
