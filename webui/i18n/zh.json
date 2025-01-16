@@ -34,6 +34,10 @@
     "subtitle_split":"拆分字幕",
     "bg_music_split":"拆分背景音乐",
     "material_handler_submit":"开始拆分",
-    "upload_origin_video":"上传原始视频"
+    "upload_origin_video":"上传原始视频",
+    "processing":"正在处理, 请稍后...",
+    "upload_origin_video_is_empty":"上传原始视频为空",
+    "material_handler_submit_success":"素材处理成功",
+    "material_handler_submit_error":"素材处理失败"
   }
 }

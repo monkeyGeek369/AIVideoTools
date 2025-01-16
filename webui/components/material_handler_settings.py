@@ -38,26 +38,31 @@ def render_material_handler(tr,st_container:DeltaGenerator):
 
     # create submit button
     submitted = material_handler_form.form_submit_button(label=tr("material_handler_submit"))
-    if submitted:
-        if not uploaded_origin_videos:
-            logger.error(f"uploaded origin videos is empty")
-            return
-        
-        # sleep
-        time.sleep(20)
-
-        # save uploaded origin videos
-        save_uploaded_origin_videos(uploaded_origin_videos)
-        
-        # split videos
-        if video_split_checkbox_value:
-            split_videos()
-        if voice_split_checkbox_value:
-            split_voices()
-        if subtitle_split_checkbox_value:
-            split_subtitles()
-        if bg_music_split_checkbox_value:
-            split_bg_musics()
+    with split_container:
+        with st.spinner(tr("processing")):
+            if submitted:
+                if not uploaded_origin_videos:
+                    logger.error(tr("upload_origin_video_is_empty"))
+                    st.error(tr("upload_origin_video_is_empty"))
+                    return
+                
+                try:
+                    # save uploaded origin videos
+                    save_uploaded_origin_videos(uploaded_origin_videos)
+                    
+                    # split videos
+                    if video_split_checkbox_value:
+                        split_videos()
+                    if voice_split_checkbox_value:
+                        split_voices()
+                    if subtitle_split_checkbox_value:
+                        split_subtitles()
+                    if bg_music_split_checkbox_value:
+                        split_bg_musics()
+                    st.success(tr("material_handler_submit_success"))
+                except Exception as e:
+                    logger.error(tr("material_handler_submit_error")+": "+str(e))
+                    st.error(tr("material_handler_submit_error")+": "+str(e))
 
 def save_uploaded_origin_videos(videos:list[UploadedFile]):
     # get task path

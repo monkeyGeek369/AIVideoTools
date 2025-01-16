@@ -34,6 +34,10 @@
     "subtitle_split":"Split Subtitle",
     "bg_music_split":"Split Background Music",
     "material_handler_submit":"Start Split",
-    "upload_origin_video":"Upload Origin Video"
+    "upload_origin_video":"Upload Origin Video",
+    "processing":"Processing, please wait...",
+    "upload_origin_video_is_empty":"Upload Origin Video is empty",
+    "material_handler_submit_success":"material processing success",
+    "material_handler_submit_error":"material processing error"
   }
 }
