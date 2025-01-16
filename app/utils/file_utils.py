@@ -6,6 +6,7 @@ import shutil
 from uuid import uuid4
 from loguru import logger
 from app.utils import utils
+from streamlit.runtime.uploaded_file_manager import UploadedFile
 
 def open_task_folder(root_dir, task_id):
     """打开任务文件夹
@@ -84,7 +85,7 @@ def get_file_list(directory, file_types=None, sort_by='ctime', reverse=True):
     
     return file_list
 
-def save_uploaded_file(uploaded_file, save_dir, allowed_types=None):
+def save_uploaded_file(uploaded_file:UploadedFile, save_dir, allowed_types=None):
     """保存上传的文件
     Args:
         uploaded_file: StreamlitUploadedFile对象
@@ -107,9 +108,12 @@ def save_uploaded_file(uploaded_file, save_dir, allowed_types=None):
         # 如果文件已存在，添加时间戳
         save_path = os.path.join(save_dir, uploaded_file.name)
         if os.path.exists(save_path):
-            timestamp = time.strftime("%Y%m%d%H%M%S")
-            new_file_name = f"{file_name}_{timestamp}{file_extension}"
-            save_path = os.path.join(save_dir, new_file_name)
+            # delete
+            os.remove(save_path)
+            logger.info(f"remove already exists file: {save_path}")
+            #timestamp = time.strftime("%Y%m%d%H%M%S")
+            #new_file_name = f"{file_name}_{timestamp}{file_extension}"
+            #save_path = os.path.join(save_dir, new_file_name)
         
         # 保存文件
         with open(save_path, "wb") as f:

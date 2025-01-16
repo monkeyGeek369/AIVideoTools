@@ -33,6 +33,7 @@
     "voice_split":"Split Voice",
     "subtitle_split":"Split Subtitle",
     "bg_music_split":"Split Background Music",
-    "material_handler_submit":"Start Split"
+    "material_handler_submit":"Start Split",
+    "upload_origin_video":"Upload Origin Video"
   }
 }
