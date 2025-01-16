@@ -2,7 +2,9 @@ import streamlit as st
 import os,sys
 from app.config import config
 from app.utils import utils
+from streamlit.delta_generator import DeltaGenerator
 from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings
+
 
 # clean all tasks
 if len(config.ui) <= 0:
@@ -168,6 +170,9 @@ def main():
     video_meta_data_settings.render_video_meta_data(tr,video_meta_data_column)
     video_edit_settings.render_video_edit(tr,video_edit_column)
     control_panel_settings.render_control_panel(tr,control_container)
+
+    # clean closed session
+    utils.cleanup_all_closed_tasks()
     
 if __name__ == "__main__":
     # run app

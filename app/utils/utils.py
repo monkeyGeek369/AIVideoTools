@@ -7,10 +7,10 @@ from loguru import logger
 import streamlit as st
 import json
 from uuid import uuid4
-import urllib3
+import urllib3,shutil
 from datetime import datetime, timedelta
 from app.models import const
-from . import file_utils
+from . import file_utils,streamlit_utils
 
 urllib3.disable_warnings()
 
@@ -490,14 +490,13 @@ def cleanup_tasks():
     tasks_path = task_dir()
     file_utils.cleanup_temp_files(tasks_path)
 
-def cleanup_disconnected_task():
-    if 'task_path' in st.session_state:
-        task_path = st.session_state['task_path']
-        if os.path.exists(task_path):
-            # delete file
-            file_utils.cleanup_temp_files(task_path)
-            # delete file path
-            os.remove(task_path)
-        del st.session_state['task_path']
-        
+def cleanup_all_closed_tasks():
+    active_task_paths = streamlit_utils.get_all_active_session_task_paths()
+    all_task_paths = os.listdir(task_dir())
+    # get all task paths
+    for task_path in all_task_paths:
+        task_all_path =  os.path.join(task_dir(), task_path)
+        if task_all_path not in active_task_paths:
+            shutil.rmtree(task_all_path)
+
 
