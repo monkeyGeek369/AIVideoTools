@@ -1,5 +1,7 @@
 from streamlit.delta_generator import DeltaGenerator
 from .material_handler_settings import render_material_handler
+from .subtitle_handler_settings import render_subtitle_handler
+
 
 def render_control_panel(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
     material_handler_tab,subtitle_handler_tab,voice_handler_tab,bg_music_handler_tab,video_handler_tab,material_edit_tab = st_container.tabs(tabs=[
@@ -21,8 +23,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator):
 
 def render_bg_music_handler(tr,st_container:DeltaGenerator):
     pass
-def render_subtitle_handler(tr,st_container:DeltaGenerator):
-    pass
+
 def render_video_handler(tr,st_container:DeltaGenerator):
     pass
 def render_material_edit(tr,st_container:DeltaGenerator):
