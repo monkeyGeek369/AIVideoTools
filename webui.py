@@ -167,9 +167,14 @@ def main():
     video_meta_data_column,video_edit_column,control_container = page_layout()
 
     # render layout
-    video_meta_data_settings.render_video_meta_data(tr,video_meta_data_column)
-    video_edit_settings.render_video_edit(tr,video_edit_column)
-    control_panel_settings.render_control_panel(tr,control_container)
+    meta_dict = video_meta_data_settings.render_video_meta_data(tr,video_meta_data_column)
+    edit_dict = video_edit_settings.render_video_edit(tr,video_edit_column)
+
+    # render control panel
+    container_dict = {}
+    container_dict.update(meta_dict)
+    container_dict.update(edit_dict)
+    control_panel_settings.render_control_panel(tr,control_container,container_dict)
 
     # clean closed session
     utils.cleanup_all_closed_tasks()

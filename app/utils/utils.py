@@ -298,6 +298,9 @@ def video_dir(sub_dir: str = ""):
         os.makedirs(d)
     return d
 
+def create_dir(dir:str):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
 
 def split_timestamp(timestamp):
     """

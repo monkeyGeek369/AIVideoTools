@@ -7,6 +7,7 @@ from uuid import uuid4
 from loguru import logger
 from app.utils import utils
 from streamlit.runtime.uploaded_file_manager import UploadedFile
+from app.models.file_info import LocalFileInfo
 
 def open_task_folder(root_dir, task_id):
     """打开任务文件夹
@@ -44,7 +45,7 @@ def cleanup_temp_files(temp_dir):
             except Exception as e:
                 logger.error(f"清理临时文件失败: {file_path}, 错误: {e}")
 
-def get_file_list(directory, file_types=None, sort_by='ctime', reverse=True):
+def get_file_list(directory, file_types=None, sort_by='ctime', reverse=True) -> list[LocalFileInfo]:
     """获取指定目录下的文件列表
     Args:
         directory: 目录路径
@@ -68,20 +69,16 @@ def get_file_list(directory, file_types=None, sort_by='ctime', reverse=True):
     for file_path in files:
         try:
             file_stat = os.stat(file_path)
-            file_info = {
-                "name": os.path.basename(file_path),
-                "path": file_path,
-                "size": file_stat.st_size,
-                "ctime": file_stat.st_ctime,
-                "mtime": file_stat.st_mtime
-            }
+            file_name = os.path.basename(file_path)
+            suffixs = file_name.split('.')
+            file_info = LocalFileInfo(name=suffixs[0],suffix=(suffixs[-1] if len(suffixs) > 1 else ''),path=file_path,size=file_stat.st_size,ctime=file_stat.st_ctime,mtime=file_stat.st_mtime)
             file_list.append(file_info)
         except Exception as e:
             logger.error(f"获取文件信息失败: {file_path}, 错误: {e}")
     
     # 排序
     if sort_by in ['ctime', 'mtime', 'size', 'name']:
-        file_list.sort(key=lambda x: x.get(sort_by, ''), reverse=reverse)
+        file_list.sort(key=lambda x: getattr(x, sort_by), reverse=reverse)
     
     return file_list
 
