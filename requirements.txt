@@ -8,6 +8,6 @@ streamlit~=1.40.0
 loguru~=0.7.2
 pydantic~=2.6.3
 edge-tts==6.1.19
-
+openai~=1.59.8
 
 
