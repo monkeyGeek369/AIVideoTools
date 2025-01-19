@@ -32,7 +32,20 @@ def render_subtitle_handler(tr,st_container:DeltaGenerator):
             )
 
     # ai handler
-    ai_container.subheader("456")
+    llm_url = ai_container.text_input(label=tr("base_url"),key="llm_url")
+    llm_api_key = ai_container.text_input(label=tr("api_key"),key="llm_api_key")
+    llm_model = ai_container.text_input(label=tr("model"),key="llm_model")
+    llm_prompt = ai_container.text_area(label=tr("prompt"),key="llm_prompt",value="你现在是一名中文视频字幕处理专家，给定中文字幕信息包含字幕index、字幕时间范围、字幕内容，当给到你字幕数据后希望你进行如下处理。-针对每一段字幕一定要重新生成字幕内容-新生成的字幕内容要与原字幕上下文语意相同但文字要有差异-新生成的字幕要满足原视频时间范围-直接输出处理后的中文字幕结果，无需输出其它内容-输出格式要与原格式相同-禁止带标点符号，可以用空格代替")
+    llm_temperature = ai_container.text_input(label=tr("temperature"),key="llm_temperature",value="0.7")
+
+    ai_btn_container = ai_container.container(border=True)
+    llm_btn_left,llm_btn_mid,llm_btn_right = ai_btn_container.columns(3)
+    if llm_btn_left.button(label=tr("llm_test_check")):
+        print("llm_url:",llm_url)
+    if llm_btn_mid.button(label=tr("llm_subtitle_process")):
+        print("llm_api_key:",llm_api_key)
+    if llm_btn_right.button(label=tr("use_material_subtitles")):
+        print("llm_model:",llm_model)
 
     # processing handler
     processed_container.subheader("789")

@@ -38,6 +38,14 @@
     "processing":"Processing, please wait...",
     "upload_origin_video_is_empty":"Upload Origin Video is empty",
     "material_handler_submit_success":"material processing success",
-    "material_handler_submit_error":"material processing error"
+    "material_handler_submit_error":"material processing error",
+    "base_url":"LLM URL",
+    "api_key":"LLM API Key",
+    "model":"LLM Model",
+    "llm_test_check":"TestConnection",
+    "llm_subtitle_process":"Processing",
+    "use_material_subtitles":"Use Material",
+    "prompt":"prompt",
+    "temperature":"temperature"
   }
 }

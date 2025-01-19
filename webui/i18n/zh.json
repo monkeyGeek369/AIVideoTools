@@ -38,6 +38,14 @@
     "processing":"正在处理, 请稍后...",
     "upload_origin_video_is_empty":"上传原始视频为空",
     "material_handler_submit_success":"素材处理成功",
-    "material_handler_submit_error":"素材处理失败"
+    "material_handler_submit_error":"素材处理失败",
+    "base_url":"模型URL",
+    "api_key":"模型API Key",
+    "model":"模型名称",
+    "llm_test_check":"测试连通",
+    "llm_subtitle_process":"处理字幕",
+    "use_material_subtitles":"使用素材",
+    "prompt":"提示词",
+    "temperature":"temperature"
   }
 }
