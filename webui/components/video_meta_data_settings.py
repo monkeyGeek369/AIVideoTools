@@ -9,9 +9,9 @@ def render_video_meta_data(tr,st_container:DeltaGenerator) -> dict[str,DeltaGene
     result['material_video_expander'] = material_video_expander
 
     # material bg music expander 
-    material_bg_music_expander = st_container.expander(label=tr("material_bg_music"),expanded=True)
-    material_bg_music_expander.write(tr("material_bg_music_tips"))
-    result['material_bg_music_expander'] = material_bg_music_expander
+    #material_bg_music_expander = st_container.expander(label=tr("material_bg_music"),expanded=True)
+    #material_bg_music_expander.write(tr("material_bg_music_tips"))
+    result['material_bg_music_expander'] = None
 
     # material voice expander
     material_voice_expander = st_container.expander(label=tr("material_voice"),expanded=True)

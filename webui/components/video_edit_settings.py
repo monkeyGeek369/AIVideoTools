@@ -9,9 +9,9 @@ def render_video_edit(tr,st_container:DeltaGenerator) -> dict[str,DeltaGenerator
     result['edit_video_expander'] = edit_video_expander
 
     # material bg music expander 
-    edit_bg_music_expander = st_container.expander(label=tr("edit_bg_music"),expanded=True)
-    edit_bg_music_expander.write(tr("edit_bg_music_tips"))
-    result['edit_bg_music_expander'] = edit_bg_music_expander
+    #edit_bg_music_expander = st_container.expander(label=tr("edit_bg_music"),expanded=True)
+    #edit_bg_music_expander.write(tr("edit_bg_music_tips"))
+    #result['edit_bg_music_expander'] = edit_bg_music_expander
 
     # material voice expander
     edit_voice_expander = st_container.expander(label=tr("edit_voice"),expanded=True)

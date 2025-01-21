@@ -46,6 +46,10 @@
     "llm_subtitle_process":"Processing",
     "use_material_subtitles":"Use Material",
     "prompt":"prompt",
-    "temperature":"temperature"
+    "temperature":"temperature",
+    "llm_check_success":"Connection Successful",
+    "llm_check_fail":"Connection Failed",
+    "material_subtitles_empty":"Material Subtitles is empty",
+    "material_subtitles_video_count_not_match":"Material Subtitles video count not match"
   }
 }

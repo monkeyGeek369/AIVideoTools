@@ -12,7 +12,7 @@ def render_control_panel(tr,st_container:DeltaGenerator,container_dict:dict[str,
         tr("video_handler"),
         tr("material_edit")])
     render_material_handler(tr,material_handler_tab,container_dict)
-    render_subtitle_handler(tr,subtitle_handler_tab)
+    render_subtitle_handler(tr,subtitle_handler_tab,container_dict)
     render_voice_handler(tr,voice_handler_tab)
     render_bg_music_handler(tr,bg_music_handler_tab)
     render_video_handler(tr,video_handler_tab)

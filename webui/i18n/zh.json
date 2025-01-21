@@ -46,6 +46,10 @@
     "llm_subtitle_process":"处理字幕",
     "use_material_subtitles":"使用素材",
     "prompt":"提示词",
-    "temperature":"temperature"
+    "temperature":"temperature",
+    "llm_check_success":"连接成功",
+    "llm_check_fail":"连接失败",
+    "material_subtitles_empty":"字幕素材为空",
+    "material_subtitles_video_count_not_match":"字幕素材视频数不匹配"
   }
 }

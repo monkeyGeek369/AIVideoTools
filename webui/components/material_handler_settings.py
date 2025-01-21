@@ -38,7 +38,8 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     with column3:
         subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split")
     with column4:
-        bg_music_split_checkbox_value = column4.checkbox(label=tr("bg_music_split"),key="bg_music_split")
+        pass
+        #bg_music_split_checkbox_value = column4.checkbox(label=tr("bg_music_split"),key="bg_music_split",disabled=False)
 
     # create submit button
     submitted = material_handler_form.form_submit_button(label=tr("material_handler_submit"))
@@ -151,10 +152,10 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
         video_container.video(material_video.path)
 
     # show bg music
-    material_bg_musics_path = os.path.join(task_path, "material_bg_musics")
-    material_bg_musics = file_utils.get_file_list(directory=material_bg_musics_path)
-    for material_bg_music in material_bg_musics:
-        bg_music_container.audio(material_bg_music.path)
+    #material_bg_musics_path = os.path.join(task_path, "material_bg_musics")
+    #material_bg_musics = file_utils.get_file_list(directory=material_bg_musics_path)
+    #for material_bg_music in material_bg_musics:
+        #bg_music_container.audio(material_bg_music.path)
 
     # show voice
     material_voices_path = os.path.join(task_path, "material_voices")
