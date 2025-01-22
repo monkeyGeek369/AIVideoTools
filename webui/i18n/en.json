@@ -50,6 +50,15 @@
     "llm_check_success":"Connection Successful",
     "llm_check_fail":"Connection Failed",
     "material_subtitles_empty":"Material Subtitles is empty",
-    "material_subtitles_video_count_not_match":"Material Subtitles video count not match"
+    "material_subtitles_video_count_not_match":"Material Subtitles video count not match",
+    "speech_synthesis":"Speech Synthesis",
+    "speech_language":"Speech Language",
+    "speech_volume":"Volume",
+    "speech_volume_help":"1.0 means 100%",
+    "speech_rate":"Speech Rate",
+    "speech_pitch":"Speech Pitch",
+    "voice_handler_submit":"voice synthesis",
+    "voice_handler_check":"voice test",
+    "v2_voice_error":"V2 voice is not supported"
   }
 }

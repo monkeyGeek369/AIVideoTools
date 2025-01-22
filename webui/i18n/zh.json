@@ -50,6 +50,15 @@
     "llm_check_success":"连接成功",
     "llm_check_fail":"连接失败",
     "material_subtitles_empty":"字幕素材为空",
-    "material_subtitles_video_count_not_match":"字幕素材视频数不匹配"
+    "material_subtitles_video_count_not_match":"字幕素材视频数不匹配",
+    "speech_synthesis":"语音合成",
+    "speech_language":"语音语种",
+    "speech_volume":"音量",
+    "speech_volume_help":"1.0标识100%",
+    "speech_rate":"语速",
+    "speech_pitch":"音调",
+    "voice_handler_submit":"语音合成",
+    "voice_handler_check":"语音试听",
+    "v2_voice_error":"暂不支持v2语音模型"
   }
 }
