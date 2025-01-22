@@ -59,6 +59,9 @@
     "speech_pitch":"音调",
     "voice_handler_submit":"语音合成",
     "voice_handler_check":"语音试听",
-    "v2_voice_error":"暂不支持v2语音模型"
+    "v2_voice_error":"暂不支持v2语音模型",
+    "merged_subtitle_not_found":"未找到合并后的字幕",
+    "tts_failed":"语音合成失败",
+    "audio_merge_failed":"音频合并失败"
   }
 }

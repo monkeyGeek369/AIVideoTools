@@ -1034,12 +1034,10 @@ def is_azure_v2_voice(voice_name: str):
     return ""
 
 
-def tts(
-    text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str
-) -> [SubMaker, None]:
+def tts(text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str,voice_volume:float) -> [SubMaker, None]:
     if is_azure_v2_voice(voice_name):
         return azure_tts_v2(text, voice_name, voice_file)
-    return azure_tts_v1(text, voice_name, voice_rate, voice_pitch, voice_file)
+    return azure_tts_v1(text, voice_name, voice_rate, voice_pitch, voice_file,voice_volume)
 
 
 def convert_rate_to_percent(rate: float) -> str:
@@ -1051,7 +1049,15 @@ def convert_rate_to_percent(rate: float) -> str:
     else:
         return f"{percent}%"
 
-
+def convert_volume_to_percent(volume: float) -> str:
+    if volume == 1.0:
+        return "+0%"
+    percent = round((volume - 1.0) * 100)
+    if percent > 0:
+        return f"+{percent}%"
+    else:
+        return f"{percent}%"
+    
 def convert_pitch_to_percent(rate: float) -> str:
     if rate == 1.0:
         return "+0Hz"
@@ -1063,18 +1069,19 @@ def convert_pitch_to_percent(rate: float) -> str:
 
 
 def azure_tts_v1(
-    text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str
+    text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str,voice_volume:float
 ) -> [SubMaker, None]:
     voice_name = parse_voice_name(voice_name)
     text = text.strip()
     rate_str = convert_rate_to_percent(voice_rate)
+    volume_str = convert_volume_to_percent(voice_volume)
     pitch_str = convert_pitch_to_percent(voice_pitch)
     for i in range(3):
         try:
             logger.info(f"第 {i+1} 次使用 edge_tts 生成音频")
 
             async def _do() -> tuple[SubMaker, bytes]:
-                communicate = edge_tts.Communicate(text, voice_name, rate=rate_str, pitch=pitch_str)
+                communicate = edge_tts.Communicate(text, voice_name, rate=rate_str, pitch=pitch_str,volume=volume_str)
                 sub_maker = edge_tts.SubMaker()
                 audio_data = bytes()  # 用于存储音频数据
                 
@@ -1326,52 +1333,53 @@ def get_audio_duration(sub_maker: submaker.SubMaker):
     return sub_maker.offset[-1][1] / 10000000
 
 
-def tts_multiple(task_id: str, list_script: list, voice_name: str, voice_rate: float, voice_pitch: float, force_regenerate: bool = True):
+def tts_multiple(out_path:str,subtitle_list: list, voice_name: str, voice_rate: float, voice_pitch: float, force_regenerate: bool = True,volume: float = 1.0) -> list:
     """
     根据JSON文件中的多段文本进行TTS转换
     
-    :param task_id: 任务ID
-    :param list_script: 脚本列表
+    :param out_path: 数据目录
+    :param subtitle_list: 脚本列表 ->包含字幕序号、出现时间、和字幕文本的元组列表。
     :param voice_name: 语音名称
     :param voice_rate: 语音速率
+    :param voice_pitch: 语音音调
     :param force_regenerate: 是否强制重新生成已存在的音频文件
+    :param volume: 语音音量
     :return: 生成的音频文件列表
     """
-    voice_name = parse_voice_name(voice_name)
-    output_dir = utils.task_dir(task_id)
+    
     audio_files = []
     sub_maker_list = []
 
-    for item in list_script:
-        if item['OST'] != 1:
-            # 将时间戳中的冒号替换为下划线
-            timestamp = item['new_timestamp'].replace(':', '_')
-            audio_file = os.path.join(output_dir, f"audio_{timestamp}.mp3")
-            
-            # 检查文件是否已存在，如存在且不强制重新生成，则跳过
-            if os.path.exists(audio_file) and not force_regenerate:
-                logger.info(f"音频文件已存在，跳过生成: {audio_file}")
-                audio_files.append(audio_file)
-                continue
+    for item in subtitle_list:
+        index, timestamp_str, text = item
 
-            text = item['narration']
-
-            sub_maker = tts(
-                text=text,
-                voice_name=voice_name,
-                voice_rate=voice_rate,
-                voice_pitch=voice_pitch,
-                voice_file=audio_file,
-            )
-
-            if sub_maker is None:
-                logger.error(f"无法为时间戳 {timestamp} 生成音频; "
-                             f"如果您在中国，请使用VPN; "
-                             f"或者使用其他 tts 引擎")
-                continue
-
+        # 将时间戳中的冒号替换为下划线
+        timestamp = timestamp_str.split(' --> ')[0].replace(':', '_')
+        audio_file = os.path.join(out_path, f"audio_{timestamp}.mp3")
+        
+        # 检查文件是否已存在，如存在且不强制重新生成，则跳过
+        if os.path.exists(audio_file) and not force_regenerate:
+            logger.info(f"音频文件已存在，跳过生成: {audio_file}")
             audio_files.append(audio_file)
-            sub_maker_list.append(sub_maker)
-            logger.info(f"已生成音频文件: {audio_file}")
+            continue
+
+        sub_maker = tts(
+            text=text,
+            voice_name=voice_name,
+            voice_rate=voice_rate,
+            voice_pitch=voice_pitch,
+            voice_file=audio_file,
+            voice_volume=volume
+        )
+
+        if sub_maker is None:
+            logger.error(f"无法为时间戳 {timestamp} 生成音频; "
+                            f"如果您在中国，请使用VPN; "
+                            f"或者使用其他 tts 引擎")
+            continue
+
+        audio_files.append(audio_file)
+        sub_maker_list.append(sub_maker)
+        logger.info(f"已生成音频文件: {audio_file}")
 
     return audio_files, sub_maker_list

@@ -1,5 +1,5 @@
 from streamlit.delta_generator import DeltaGenerator
-from app.services import voice
+from app.services import voice,subtitle,audio_merger
 import streamlit as st
 from app.utils import utils,file_utils
 import os
@@ -48,7 +48,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         voice_volume = col3.slider(
             tr("speech_volume"),
             min_value=0.0,
-            max_value=1.0,
+            max_value=2.0,
             value=1.0,
             step=0.01,
             help=tr("speech_volume_help")
@@ -73,14 +73,16 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         st.session_state['voice_pitch'] = voice_pitch
 
         # submit button
-        bt1_col,bt2_col,bt3_col,bt4_col,bt5_col = st_container.columns(5)
-        submit_button = bt1_col.button(tr("voice_handler_submit"))
-        if submit_button:
-            pass
+        with st_container:
+            with st.spinner(tr("processing")):
+                bt1_col,bt2_col,bt3_col,bt4_col,bt5_col = st_container.columns(5)
+                submit_button = bt1_col.button(tr("voice_handler_submit"))
+                if submit_button:
+                    voice_processing(tr,container_dict)
 
-        check_button = bt2_col.button(tr("voice_handler_check"))
-        if check_button:
-            render_voice_preview(tr, voice_name,st_container)
+                check_button = bt2_col.button(tr("voice_handler_check"))
+                if check_button:
+                    render_voice_preview(tr, voice_name,st_container)
 
     except Exception as e:
         st_container.error(e)
@@ -89,35 +91,90 @@ def render_voice_preview(tr, voice_name,st_container:DeltaGenerator):
     """渲染语音试听功能"""
     play_content = "感谢关注 AIVideoTools 项目，欢迎使用语音功能。"
 
-    with st_container:
-        with st.spinner(tr("processing")):
-            task_path = st.session_state['task_path']
-            temp_dir = os.path.join(task_path, "temp")
-            file_utils.ensure_directory(temp_dir)
-            audio_file = os.path.join(temp_dir, f"tmp-voice-{utils.get_uuid()}.mp3")
+    task_path = st.session_state['task_path']
+    temp_dir = os.path.join(task_path, "temp")
+    file_utils.ensure_directory(temp_dir)
+    audio_file = os.path.join(temp_dir, f"tmp-voice-{utils.get_uuid()}.mp3")
 
-            sub_maker = voice.tts(
-                text=play_content,
-                voice_name=voice_name,
-                voice_rate=st.session_state.get('voice_rate', 1.0),
-                voice_pitch=st.session_state.get('voice_pitch', 1.0),
-                voice_file=audio_file,
-            )
+    sub_maker = voice.tts(
+        text=play_content,
+        voice_name=voice_name,
+        voice_rate=st.session_state.get('voice_rate', 1.0),
+        voice_pitch=st.session_state.get('voice_pitch', 1.0),
+        voice_file=audio_file,
+        voice_volume=st.session_state.get('voice_volume', 1.0),
+    )
 
-            # 如果语音文件生成失败，使用默认内容重试
-            if not sub_maker:
-                play_content = "This is a example voice. if you hear this, the voice synthesis failed with the original content."
-                sub_maker = voice.tts(
-                    text=play_content,
-                    voice_name=voice_name,
-                    voice_rate=st.session_state.get('voice_rate', 1.0),
-                    voice_pitch=st.session_state.get('voice_pitch', 1.0),
-                    voice_file=audio_file,
-                )
+    # 如果语音文件生成失败，使用默认内容重试
+    if not sub_maker:
+        play_content = "This is a example voice. if you hear this, the voice synthesis failed with the original content."
+        sub_maker = voice.tts(
+            text=play_content,
+            voice_name=voice_name,
+            voice_rate=st.session_state.get('voice_rate', 1.0),
+            voice_pitch=st.session_state.get('voice_pitch', 1.0),
+            voice_file=audio_file,
+            voice_volume=st.session_state.get('voice_volume', 1.0),
+        )
 
-            if sub_maker and os.path.exists(audio_file):
-                st_container.audio(audio_file, format="audio/mp3")
-                if os.path.exists(audio_file):
-                    os.remove(audio_file)
+    if sub_maker and os.path.exists(audio_file):
+        st_container.audio(audio_file, format="audio/mp3")
+        if os.path.exists(audio_file):
+            os.remove(audio_file)
 
+def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
+    # get subtitles
+    task_path = st.session_state['task_path']
+    edit_subtitles_path = os.path.join(task_path, "edit_subtitles")
+    file_utils.ensure_directory(edit_subtitles_path)
+    merged_subtitle_path = os.path.join(edit_subtitles_path, "merged.srt")
+    if not os.path.exists(merged_subtitle_path):
+        raise Exception(tr("merged_subtitle_not_found"))
+    
+    subtitle_texts = subtitle.file_to_subtitles(merged_subtitle_path)
+
+    # get total duration
+    last_timestamp = subtitle_texts[-1][1]
+    end_time = last_timestamp.split(" --> ")[1]
+    total_duration = utils.time_to_seconds(end_time)
+
+    # get audios
+    out_path = os.path.join(task_path, "temp")
+    file_utils.ensure_directory(out_path)
+    audio_files, sub_maker_list = voice.tts_multiple(
+        out_path=out_path,
+        subtitle_list=subtitle_texts, 
+        voice_name=st.session_state.get('voice_name'),
+        voice_rate=st.session_state.get('voice_rate', 1.0),
+        voice_pitch=st.session_state.get('voice_pitch', 1.0),
+        force_regenerate=True,
+        volume=st.session_state.get('voice_volume', 1.0)
+    )
+    
+    if audio_files is None:
+        raise Exception(tr("tts_failed"))
+
+    # merge audios
+    final_audio = None
+    try:
+        out_path = os.path.join(task_path, "edit_voices")
+        file_utils.ensure_directory(out_path)
+        # save final audio
+        final_audio = audio_merger.merge_audio_files(
+            out_path=out_path, 
+            audio_files=audio_files, 
+            total_duration=total_duration+1, 
+            subtitle_list=subtitle_texts
+        )
+    except Exception as e:
+        raise Exception(tr("audio_merge_failed") + " : " + str(e))
+    finally:
+        # remove audio files
+        for audio_file in audio_files:
+            if os.path.exists(audio_file):
+                os.remove(audio_file)
+
+    # show final audio
+    if final_audio is not None:
+        container_dict["edit_voice_expander"].audio(final_audio, format="audio/mp3")
 

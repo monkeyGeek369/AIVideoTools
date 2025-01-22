@@ -59,6 +59,9 @@
     "speech_pitch":"Speech Pitch",
     "voice_handler_submit":"voice synthesis",
     "voice_handler_check":"voice test",
-    "v2_voice_error":"V2 voice is not supported"
+    "v2_voice_error":"V2 voice is not supported",
+    "merged_subtitle_not_found":"Merged subtitle not found",
+    "tts_failed":"tts failed",
+    "audio_merge_failed":"audio merge failed"
   }
 }
