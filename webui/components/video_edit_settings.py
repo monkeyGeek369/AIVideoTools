@@ -13,9 +13,12 @@ def render_video_edit(tr,st_container:DeltaGenerator) -> dict[str,DeltaGenerator
     result['edit_video_expander'] = edit_video_expander
 
     # material bg music expander 
-    #edit_bg_music_expander = st_container.expander(label=tr("edit_bg_music"),expanded=True)
-    #edit_bg_music_expander.write(tr("edit_bg_music_tips"))
-    #result['edit_bg_music_expander'] = edit_bg_music_expander
+    edit_bg_music_expander = st_container.expander(label=tr("edit_bg_music"),expanded=True)
+    edit_bg_music_expander.write(tr("edit_bg_music_tips"))
+    result['edit_bg_music_expander'] = edit_bg_music_expander
+    edit_bg_musics_path = os.path.join(task_path, "edit_bg_musics","edit_bg_music.mp3")
+    if os.path.exists(edit_bg_musics_path):
+        edit_bg_music_expander.audio(edit_bg_musics_path, format="audio/mp3")
 
     # material voice expander
     edit_voice_expander = st_container.expander(label=tr("edit_voice"),expanded=True)

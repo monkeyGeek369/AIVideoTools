@@ -62,6 +62,16 @@
     "v2_voice_error":"V2 voice is not supported",
     "merged_subtitle_not_found":"Merged subtitle not found",
     "tts_failed":"tts failed",
-    "audio_merge_failed":"audio merge failed"
+    "audio_merge_failed":"audio merge failed",
+    "no_bg_music":"no background music",
+    "random_bg_music":"random background music",
+    "custom_bg_music":"custom background music",
+    "background_music":"background music",
+    "custom_bgm_file":"custom background music file",
+    "custom_bgm_file_not_exist":"custom background music file not exist",
+    "bgm_volume":"background music volume",
+    "bgm_volume_help":"adjust original audio volume",
+    "bg_music_handler_submit":"get background music",
+    "custom_bgm_file_not_mp3":"custom background music file must be mp3 format"
   }
 }

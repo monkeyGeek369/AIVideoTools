@@ -128,8 +128,11 @@ def get_bgm_file(bgm_type: str = "random", bgm_file: str = ""):
     if not bgm_type:
         return ""
 
-    if bgm_file and os.path.exists(bgm_file):
-        return bgm_file
+    if bgm_file and os.path.exists(bgm_file) and os.path.isfile(bgm_file):
+        if bgm_file.endswith(".mp3"):
+            return bgm_file
+        else:
+            return None
 
     if bgm_type == "random":
         song_dir_path = song_dir()

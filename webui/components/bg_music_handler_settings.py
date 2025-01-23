@@ -1,0 +1,68 @@
+from streamlit.delta_generator import DeltaGenerator
+import streamlit as st
+import os,shutil,math
+from app.utils import utils,file_utils
+from pydub import AudioSegment
+
+
+def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
+    """渲染背景音乐设置"""
+    # 背景音乐选项
+    bgm_options = [
+        (tr("no_bg_music"), ""),
+        (tr("random_bg_music"), "random"),
+        (tr("custom_bg_music"), "custom"),
+    ]
+
+    selected_index = st_container.selectbox(
+        tr("background_music"),
+        index=1,
+        options=range(len(bgm_options)),
+        format_func=lambda x: bgm_options[x][0],
+    )
+
+    # 获取选择的背景音乐类型
+    bgm_type = bgm_options[selected_index][1]
+    #st.session_state['bgm_type'] = bgm_type
+
+    custom_bgm_file = None
+    if bgm_type == "custom":
+        custom_bgm_file = st_container.text_input(tr("custom_bgm_file"), value="")
+
+    # 背景音乐音量
+    bgm_volume = st_container.slider(
+        tr("bgm_volume"),
+        min_value=0.0,
+        max_value=1.0,
+        value=0.3,
+        step=0.01,
+        help=tr("bgm_volume_help"),
+    )
+    #st.session_state['bgm_volume'] = bgm_volume
+
+    # get save path
+    task_path = st.session_state['task_path']
+    edit_bg_musics_path = os.path.join(task_path, "edit_bg_musics")
+    file_utils.ensure_directory(edit_bg_musics_path)
+
+    # submit button
+    submit_button = st_container.button(tr("bg_music_handler_submit"))
+    if submit_button:
+        with st_container:
+            with st.spinner(tr("processing")):
+                bgm_path = utils.get_bgm_file(bgm_type=bgm_type, bgm_file=custom_bgm_file)
+
+                if bgm_path is None or bgm_path == "":
+                    st_container.error(tr("no_bg_music"))
+                    os.remove(os.path.join(edit_bg_musics_path, "edit_bg_music.mp3"))
+                else:
+                    #shutil.copy(bgm_path, os.path.join(edit_bg_musics_path, "edit_bg_music.mp3"))
+                    audio = AudioSegment.from_file(bgm_path)
+                    gain_db = 20 * math.log10(bgm_volume)
+                    adjusted_audio = audio.apply_gain(gain_db)
+                    adjusted_audio.export(os.path.join(edit_bg_musics_path, "edit_bg_music.mp3"), format="mp3")
+                # show bg music
+                if os.path.exists(os.path.join(edit_bg_musics_path, "edit_bg_music.mp3")):
+                    container_dict["edit_bg_music_expander"].audio(os.path.join(edit_bg_musics_path, "edit_bg_music.mp3"), format="audio/mp3")
+
+

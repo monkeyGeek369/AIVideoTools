@@ -62,6 +62,16 @@
     "v2_voice_error":"暂不支持v2语音模型",
     "merged_subtitle_not_found":"未找到合并后的字幕",
     "tts_failed":"语音合成失败",
-    "audio_merge_failed":"音频合并失败"
+    "audio_merge_failed":"音频合并失败",
+    "no_bg_music":"无背景音乐",
+    "random_bg_music":"随机背景音乐",
+    "custom_bg_music":"自定义背景音乐",
+    "background_music":"背景音乐",
+    "custom_bgm_file":"自定义背景音乐文件",
+    "custom_bgm_file_not_exist":"自定义背景音乐文件不存在",
+    "bgm_volume":"背景音乐音量",
+    "bgm_volume_help":"调整原始音频的音量",
+    "bg_music_handler_submit":"获取背景音",
+    "custom_bgm_file_not_mp3":"自定义背景音乐文件必须是mp3格式"
   }
 }
