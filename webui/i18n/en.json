@@ -72,6 +72,10 @@
     "bgm_volume":"background music volume",
     "bgm_volume_help":"adjust original audio volume",
     "bg_music_handler_submit":"get background music",
-    "custom_bgm_file_not_mp3":"custom background music file must be mp3 format"
+    "custom_bgm_file_not_mp3":"custom background music file must be mp3 format",
+    "video_mirror":"mirror video",
+    "video_stylize":"video stylize",
+    "video_handler_submit":"video processing",
+    "material_videos_not_exist":"material videos not exist"
   }
 }

@@ -3,6 +3,7 @@ from .material_handler_settings import render_material_handler
 from .subtitle_handler_settings import render_subtitle_handler
 from .voice_handler_settings import render_voice_handler
 from .bg_music_handler_settings import render_bg_music_handler
+from .video_handler_settings import render_video_handler
 
 
 def render_control_panel(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
@@ -17,11 +18,9 @@ def render_control_panel(tr,st_container:DeltaGenerator,container_dict:dict[str,
     render_subtitle_handler(tr,subtitle_handler_tab,container_dict)
     render_voice_handler(tr,voice_handler_tab,container_dict)
     render_bg_music_handler(tr,bg_music_handler_tab,container_dict)
-    render_video_handler(tr,video_handler_tab)
+    render_video_handler(tr,video_handler_tab,container_dict)
     render_material_edit(tr,material_edit_tab)
 
-def render_video_handler(tr,st_container:DeltaGenerator):
-    pass
 def render_material_edit(tr,st_container:DeltaGenerator):
     pass
 
