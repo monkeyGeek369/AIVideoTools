@@ -60,7 +60,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         voice_rate = col4.selectbox(
             tr("speech_rate"),
             options=[0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.5, 1.8, 2.0],
-            index=2,
+            index=5,
         )
         st.session_state['voice_rate'] = voice_rate
 
@@ -177,4 +177,5 @@ def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
     # show final audio
     if final_audio is not None:
         container_dict["edit_voice_expander"].audio(final_audio, format="audio/mp3")
+        st.session_state['edit_voice_path'] = final_audio
 

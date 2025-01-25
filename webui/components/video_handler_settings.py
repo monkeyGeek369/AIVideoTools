@@ -83,6 +83,7 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
 
         # show
         container_dict["edit_video_expander"].video(final_clip_path, format="video/mp4")
+        st.session_state['edit_video_path'] = final_clip_path
         
     except Exception as e:
         st_container.error(e)

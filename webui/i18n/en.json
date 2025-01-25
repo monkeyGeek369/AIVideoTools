@@ -28,7 +28,7 @@
     "bg_music_handler":"Background Music Handler",
     "subtitle_handler":"Subtitle Handler",
     "video_handler":"Video Handler",
-    "material_edit":"Material Edit",
+    "compound_handler":"Compound Handler",
     "video_split":"Split Video",
     "voice_split":"Split Voice",
     "subtitle_split":"Split Subtitle",
@@ -81,6 +81,17 @@
     "setting_sun_filter":"setting sun filter",
     "sea_blue_filter":"sea blue filter",
     "video_filter":"video filter",
-    "none_filter":"none filter"
+    "none_filter":"none filter",
+    "compound_column_subheader":"Compound Show",
+    "compound_video":"compound video",
+    "compound_video_tips":"compound video show list",
+    "compound_handler_submit":"compound processing",
+    "edit_video_not_found":"edit video not found",
+    "compound_bg_music":"background music",
+    "compound_voice":"voice",
+    "compound_subtitle":"subtitle",
+    "edit_bg_music_not_found":"edit background music not found",
+    "edit_voice_not_found":"edit voice not found",
+    "download_compound_video":"download compound video"
   }
 }

@@ -28,7 +28,7 @@
     "bg_music_handler":"背景音乐处理",
     "subtitle_handler":"字幕处理",
     "video_handler":"视频处理",
-    "material_edit":"素材编辑",
+    "compound_handler":"合成处理",
     "video_split":"拆分视频",
     "voice_split":"拆分语音",
     "subtitle_split":"拆分字幕",
@@ -81,6 +81,17 @@
     "setting_sun_filter":"夕阳滤镜",
     "sea_blue_filter":"海蓝滤镜",
     "video_filter":"视频滤镜",
-    "none_filter":"无滤镜"
+    "none_filter":"无滤镜",
+    "compound_column_subheader":"合成展示",
+    "compound_video":"合成视频",
+    "compound_video_tips":"合成视频展示列表",
+    "compound_handler_submit":"开始合成",
+    "edit_video_not_found":"未找到编辑后的视频",
+    "compound_bg_music":"背景音乐",
+    "compound_voice":"语音",
+    "compound_subtitle":"字幕",
+    "edit_bg_music_not_found":"未找到编辑后的背景音乐",
+    "edit_voice_not_found":"未找到编辑后的语音",
+    "download_compound_video":"下载合成视频"
   }
 }

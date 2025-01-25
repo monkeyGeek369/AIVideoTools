@@ -3,7 +3,7 @@ import os,sys
 from app.config import config
 from app.utils import utils
 from streamlit.delta_generator import DeltaGenerator
-from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings
+from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings,compound_settings
 
 
 # clean all tasks
@@ -129,15 +129,16 @@ def page_layout() -> list[DeltaGenerator]:
 
     # video container
     video_container = st.container(border=True)
-    video_meta_data_column,video_edit_column = video_container.columns([0.3,0.7],gap="small")
+    video_meta_data_column,video_edit_column,compound_column = video_container.columns([0.3,0.4,0.3],gap="small")
     video_meta_data_column.subheader(tr("video_meta_data_column_subheader"))
     video_edit_column.subheader(tr("video_edit_column_subheader"))
+    compound_column.subheader(tr("compound_column_subheader"))
 
     # control container
     control_container = st.container(border=True)
     control_container.subheader(tr("control_container_subheader"))
 
-    result = [video_meta_data_column,video_edit_column,control_container]
+    result = [video_meta_data_column,video_edit_column,compound_column,control_container]
     return result
 
 def tr(key):
@@ -164,16 +165,18 @@ def main():
     init_task()
 
     # page layout
-    video_meta_data_column,video_edit_column,control_container = page_layout()
+    video_meta_data_column,video_edit_column,compound_column,control_container = page_layout()
 
     # render layout
     meta_dict = video_meta_data_settings.render_video_meta_data(tr,video_meta_data_column)
     edit_dict = video_edit_settings.render_video_edit(tr,video_edit_column)
+    compound_dict = compound_settings.render_compound_settings(tr,compound_column)
 
     # render control panel
     container_dict = {}
     container_dict.update(meta_dict)
     container_dict.update(edit_dict)
+    container_dict.update(compound_dict)
     control_panel_settings.render_control_panel(tr,control_container,container_dict)
 
     # clean closed session

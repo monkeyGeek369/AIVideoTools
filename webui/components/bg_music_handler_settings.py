@@ -44,6 +44,7 @@ def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     task_path = st.session_state['task_path']
     edit_bg_musics_path = os.path.join(task_path, "edit_bg_musics")
     file_utils.ensure_directory(edit_bg_musics_path)
+    edit_bg_musics_file_path = os.path.join(edit_bg_musics_path, "edit_bg_music.mp3")
 
     # submit button
     submit_button = st_container.button(tr("bg_music_handler_submit"))
@@ -54,15 +55,15 @@ def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
 
                 if bgm_path is None or bgm_path == "":
                     st_container.error(tr("no_bg_music"))
-                    os.remove(os.path.join(edit_bg_musics_path, "edit_bg_music.mp3"))
+                    os.remove(edit_bg_musics_file_path)
                 else:
-                    #shutil.copy(bgm_path, os.path.join(edit_bg_musics_path, "edit_bg_music.mp3"))
                     audio = AudioSegment.from_file(bgm_path)
                     gain_db = 20 * math.log10(bgm_volume)
                     adjusted_audio = audio.apply_gain(gain_db)
-                    adjusted_audio.export(os.path.join(edit_bg_musics_path, "edit_bg_music.mp3"), format="mp3")
+                    adjusted_audio.export(edit_bg_musics_file_path, format="mp3")
                 # show bg music
-                if os.path.exists(os.path.join(edit_bg_musics_path, "edit_bg_music.mp3")):
-                    container_dict["edit_bg_music_expander"].audio(os.path.join(edit_bg_musics_path, "edit_bg_music.mp3"), format="audio/mp3")
+                if os.path.exists(edit_bg_musics_file_path):
+                    container_dict["edit_bg_music_expander"].audio(edit_bg_musics_file_path, format="audio/mp3")
+                    st.session_state['edit_bg_musics_path'] = edit_bg_musics_file_path
 
 
