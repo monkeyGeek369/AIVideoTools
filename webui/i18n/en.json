@@ -76,6 +76,11 @@
     "video_mirror":"mirror video",
     "video_stylize":"video stylize",
     "video_handler_submit":"video processing",
-    "material_videos_not_exist":"material videos not exist"
+    "material_videos_not_exist":"material videos not exist",
+    "warm_sun_filter":"warm sun filter",
+    "setting_sun_filter":"setting sun filter",
+    "sea_blue_filter":"sea blue filter",
+    "video_filter":"video filter",
+    "none_filter":"none filter"
   }
 }

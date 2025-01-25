@@ -11,4 +11,4 @@ edge-tts==6.1.19
 openai~=1.59.8
 pysrt==1.1.2
 pydub==0.25.1
-
+scikit-image==0.25.0

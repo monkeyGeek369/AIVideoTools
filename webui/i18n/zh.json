@@ -76,6 +76,11 @@
     "video_mirror":"镜像视频",
     "video_stylize":"视频风格化",
     "video_handler_submit":"视频处理",
-    "material_videos_not_exist":"素材视频不存在"
+    "material_videos_not_exist":"素材视频不存在",
+    "warm_sun_filter":"暖光滤镜",
+    "setting_sun_filter":"夕阳滤镜",
+    "sea_blue_filter":"海蓝滤镜",
+    "video_filter":"视频滤镜",
+    "none_filter":"无滤镜"
   }
 }
