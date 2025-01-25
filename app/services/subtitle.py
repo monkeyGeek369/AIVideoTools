@@ -88,14 +88,18 @@ def create(audio_file, subtitle_file: str = ""):
     if not subtitle_file:
         subtitle_file = f"{audio_file}.srt"
 
-    segments, info = model.transcribe(
-        audio_file,
-        beam_size=5,
-        word_timestamps=True,
-        vad_filter=True,
-        vad_parameters=dict(min_silence_duration_ms=500),
-        initial_prompt="以下是普通话的句子"
-    )
+    segments, info = None, None
+    try:
+        segments, info = model.transcribe(
+            audio_file,
+            beam_size=5,
+            word_timestamps=True,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500),
+            initial_prompt="以下是普通话的句子"
+        )
+    except Exception as e:
+        raise Exception(f"Voice contains no text information: {str(e)}")
 
     logger.info(
         f"检测到的语言: '{info.language}', probability: {info.language_probability:.2f}"
