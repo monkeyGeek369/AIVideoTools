@@ -92,6 +92,17 @@
     "compound_subtitle":"subtitle",
     "edit_bg_music_not_found":"edit background music not found",
     "edit_voice_not_found":"edit voice not found",
-    "download_compound_video":"download compound video"
+    "download_compound_video":"download compound video",
+    "font_name":"font name",
+    "font_color":"font color",
+    "font_size":"font size",
+    "Top":"Top",
+    "Center":"Center",
+    "Bottom":"Bottom (Recommended)",
+    "Custom":"Custom Position (70, represents 70% from the top)",
+    "font_position":"font position",
+    "stroke_color":"stroke color",
+    "stroke_width":"stroke width",
+    "subtitle_info_not_found":"subtitle info not found"
   }
 }

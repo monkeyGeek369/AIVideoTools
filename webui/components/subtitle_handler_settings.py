@@ -132,6 +132,7 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
         file_utils.ensure_directory(edit_subtitles_path)
         output_subtitle_path = os.path.join(edit_subtitles_path, "merged.srt")
         merged_subs.save(output_subtitle_path, encoding='utf-8')
+        st.session_state['edit_subtitle_path'] = output_subtitle_path
 
         # show subtitle
         with open(output_subtitle_path, 'r', encoding='utf-8') as f:

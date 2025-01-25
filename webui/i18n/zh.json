@@ -92,6 +92,17 @@
     "compound_subtitle":"字幕",
     "edit_bg_music_not_found":"未找到编辑后的背景音乐",
     "edit_voice_not_found":"未找到编辑后的语音",
-    "download_compound_video":"下载合成视频"
+    "download_compound_video":"下载合成视频",
+    "font_name":"字体名称",
+    "font_color":"字体颜色",
+    "font_size":"字体大小",
+    "Top":"顶部",
+    "Center":"居中",
+    "Bottom":"底部(推荐)",
+    "Custom":"自定义位置（70，表示离顶部70%的位置）",
+    "font_position":"字体位置",
+    "stroke_color":"描边颜色",
+    "stroke_width":"描边宽度",
+    "subtitle_info_not_found":"未找到字幕信息"
   }
 }
