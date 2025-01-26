@@ -1,10 +1,10 @@
 
 from moviepy.editor import VideoFileClip,AudioFileClip,CompositeAudioClip,TextClip,CompositeVideoClip
-
+import os
 
 def test_subtitle():
    # load video
-   video_clip = VideoFileClip("/Users/monkeygeek/Downloads/test.mp4")
+   video_clip = VideoFileClip("F:\download\\test2.mp4")
 
    #colors = TextClip.list('color')
    #print(colors)
@@ -14,7 +14,7 @@ def test_subtitle():
 
    # subtitle test
    txt_clip = TextClip(
-      txt="hello world , this is a subtitle",
+      txt="hello world 234 汉字, this is a subtitle",
       size=(video_clip.size[0], None), # subtitle width and height(auto height)
       fontsize=60,
       #bg_color="blue",
@@ -22,7 +22,8 @@ def test_subtitle():
       #color="white",
       color="#000000",
       #font="Arial", # font name from system and imageMagick
-      font="/Users/monkeygeek/Documents/softProject/AIVideoTools/resource/fonts/STHeitiMedium.ttc",
+      #font="Microsoft-YaHei-Light-&-Microsoft-YaHei-UI-Light",
+      font="./resource/fonts/STHeitiMedium.ttc",
       #stroke_color="black",
       stroke_color="#FFFFFF",
       stroke_width=1.5,
@@ -41,11 +42,15 @@ def test_subtitle():
 
    # combine
    result = CompositeVideoClip([video_clip, txt_clip])
-   result.write_videofile("/Users/monkeygeek/Downloads/output_video.mp4", fps=24)
+   result.write_videofile("F:\download\output_video.mp4", fps=24)
 
 if __name__ == '__main__':
+   font_path = "F:\\softProject\\AIVideoTools\\resource\\fonts\\STHeitiMedium.ttc"
+   relpath = os.path.relpath(font_path)
+   relpath = "./"+relpath.replace(os.sep, '/')
+   print(relpath)
 
    # test subtitle
-   test_subtitle()
+   #test_subtitle()
 
 

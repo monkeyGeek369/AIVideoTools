@@ -1,6 +1,6 @@
 from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
-import os,time
+import os,time,platform
 from moviepy.editor import VideoFileClip,AudioFileClip,CompositeAudioClip,TextClip,CompositeVideoClip
 from app.utils import file_utils,utils,cache
 import pysrt
@@ -227,6 +227,9 @@ def get_subtitle_clips(video_height) -> list[TextClip]:
     subtitle_path = st.session_state['edit_subtitle_path']
     subtitle_params = get_subtitle_params()
     font_path = utils.font_dir(subtitle_params['font_name'])
+    if platform.system() == 'Windows':
+        font_path = os.path.relpath(font_path)
+        font_path =  "./"+font_path.replace(os.sep, '/')
 
     # base check
     if not os.path.exists(subtitle_path):
