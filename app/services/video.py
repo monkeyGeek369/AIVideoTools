@@ -247,34 +247,30 @@ def loop_audio_clip(audio_clip: AudioFileClip, target_duration: float) -> AudioF
     return extended_audio.subclip(0, target_duration)
 
 
-def calculate_subtitle_position(position, video_height: int, text_height: int = 0) -> tuple:
+def calculate_subtitle_position(position, video_height: int, custom_position: float = 0) -> tuple:
     """
     计算字幕在视频中的具体位置
     
     Args:
-        position: 位置配置，可以是 SubtitlePosition 枚举值或表示距顶部百分比的浮点数
+        position: 位置配置，top/center/bottom/custom
         video_height: 视频高度
-        text_height: 字幕文本高度
+        custom_position: 自定义位置，百分比
     
     Returns:
         tuple: (x, y) 坐标
     """
-    margin = 50  # 字幕距离边缘的边距
-    
-    if isinstance(position, (int, float)):
-        # 百分比位置
-        return ('center', int(video_height * position))
-    
     # 预设位置
     if position == SubtitlePosition.TOP:
-        return ('center', margin)
+        return ('center', SubtitlePosition.TOP)
     elif position == SubtitlePosition.CENTER:
         return ('center', video_height // 2)
     elif position == SubtitlePosition.BOTTOM:
-        return ('center', video_height - margin - text_height)
+        return ('center', SubtitlePosition.BOTTOM)
+    elif position == SubtitlePosition.CUSTOM:
+        return ('center', int(video_height * (custom_position / 100.0)))
     
     # 默认底部
-    return ('center', video_height - margin - text_height)
+    return ('center', SubtitlePosition.BOTTOM)
 
 
 def generate_video_v3(

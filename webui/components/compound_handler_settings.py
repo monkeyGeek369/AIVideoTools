@@ -1,6 +1,6 @@
 from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
-import os
+import os,time
 from moviepy.editor import VideoFileClip,AudioFileClip,CompositeAudioClip,TextClip,CompositeVideoClip
 from app.utils import file_utils,utils,cache
 import pysrt
@@ -69,26 +69,31 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
             audio_clips.append(voice_clip)
         
         # subtitle
-        final_clip = None
+        subtitle_clips = []
         if subtitle_check:
             subtitle_clips = get_subtitle_clips(video_clip.h)
             if subtitle_clips is None or len(subtitle_clips) == 0:
                 raise Exception(tr("subtitle_info_not_found"))
-            final_clip = CompositeVideoClip([video_clip] + subtitle_clips, size=video_clip.size)
 
-        # save
-        #mix_audio_clip = CompositeAudioClip(audio_clips)
-        #video_clip = video_clip.set_audio(mix_audio_clip)
+        # get save path
         compound_videos_path = os.path.join(task_path, "compound_videos")
         file_utils.ensure_directory(compound_videos_path)
         final_clip_path = os.path.join(compound_videos_path, "compound_video.mp4")
-        #video_clip.write_videofile(final_clip_path)
+
+        # save
+        mix_audio_clip = CompositeAudioClip(audio_clips)
+        video_clip = video_clip.set_audio(mix_audio_clip)
+        final_clip = video_clip
+        if subtitle_clips and len(subtitle_clips) > 0:
+            final_clip = CompositeVideoClip([video_clip] + subtitle_clips, size=video_clip.size)        
+            
+            
         final_clip.write_videofile(
-            final_clip_path,
-            codec='libx264',
-            audio_codec='aac',
-            fps=video_clip.fps
-        )
+                final_clip_path,
+                codec='libx264',
+                audio_codec='aac',
+                fps=video_clip.fps
+            )
 
         # show
         container_dict["compound_video_expander"].video(final_clip_path, format="video/mp4")
@@ -96,8 +101,11 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         # download compound video
         with open(final_clip_path, "rb") as video_file:
             video_bytes = video_file.read()
-        container_dict["compound_video_expander"].download_button(label=tr("download_compound_video"),data=video_bytes, file_name="compound_video.mp4",mime="video/mp4")
-
+        container_dict["compound_video_expander"].download_button(label=tr("download_compound_video"),
+                                                                  data=video_bytes, 
+                                                                  file_name="compound_video.mp4",
+                                                                  mime="video/mp4",
+                                                                  key=f"download_button_"+str(time.time()))
     except Exception as e:
         raise e
     finally:
@@ -106,8 +114,13 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         for audio_clip in audio_clips:
             if audio_clip is not None:
                 audio_clip.close()
-        #if mix_audio_clip is not None:
-            #mix_audio_clip.close()
+        for subtitle_clip in subtitle_clips:
+            if subtitle_clip is not None:
+                subtitle_clip.close()
+        if mix_audio_clip is not None:
+            mix_audio_clip.close()
+        if final_clip is not None:
+            final_clip.close()
 
 def render_font_settings(tr):
     """渲染字体设置"""
@@ -248,35 +261,22 @@ def get_subtitle_clips(video_height) -> list[TextClip]:
                     logger.info(f"警告：第 {index + 1} 条字幕处理后为空，已跳过")
                     continue
 
-                # 创建临时 TextClip 来获取文本高度
-                temp_clip = TextClip(
-                    subtitle_text,
-                    font=font_path,
-                    fontsize=subtitle_params['font_size'],
-                    color=subtitle_params['text_fore_color']
-                )
-                text_height = temp_clip.h
-                temp_clip.close()
-
                 # 计算字幕位置
-                position_value = None
-                if subtitle_params['position'] == 'custom':
-                    position_value = subtitle_params['custom_position']
-                else:
-                    position_value = subtitle_params['position']
-
                 position = video.calculate_subtitle_position(
-                    position_value,
+                    subtitle_params['position'],
                     video_height,
-                    text_height
+                    subtitle_params['custom_position']
                 )
 
                 # 创建最终的 TextClip
                 text_clip = (TextClip(
                     subtitle_text,
-                    #font=font_path,
+                    font=font_path,
                     fontsize=subtitle_params['font_size'],
-                    color=subtitle_params['text_fore_color']
+                    color=subtitle_params['text_fore_color'],
+                    stroke_color=subtitle_params['stroke_color'],
+                    stroke_width=subtitle_params['stroke_width'],
+                    remove_temp=True
                 )
                     .set_position(position)
                     .set_duration(end_time - start_time)
