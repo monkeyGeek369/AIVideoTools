@@ -44,6 +44,24 @@ def test_subtitle():
    result = CompositeVideoClip([video_clip, txt_clip])
    result.write_videofile("F:\download\output_video.mp4", fps=24)
 
+def test_crop():
+   # load video
+   video_clip = VideoFileClip("/Users/monkeygeek/Downloads/test.webm")
+
+   width, height = video_clip.size
+
+   # 计算裁剪区域的坐标
+   x1 = 0
+   y1 = 0
+   x2 = width
+   y2 = y1 + 500
+
+   # 裁剪视频画面
+   cropped_clip = video_clip.crop(x1=x1, y1=y1, x2=x2, y2=y2)
+
+   cropped_clip.write_videofile("/Users/monkeygeek/Downloads/output.mp4", codec="libx264", fps=24)
+
+
 if __name__ == '__main__':
    font_path = "F:\\softProject\\AIVideoTools\\resource\\fonts\\STHeitiMedium.ttc"
    relpath = os.path.relpath(font_path)
@@ -52,5 +70,8 @@ if __name__ == '__main__':
 
    # test subtitle
    #test_subtitle()
+
+   # test crop
+   test_crop()
 
 
