@@ -17,11 +17,14 @@ def test_subtitle():
       txt="hello world , this is a subtitle",
       size=(video_clip.size[0], None), # subtitle width and height(auto height)
       fontsize=60,
-      bg_color="blue",
-      color="white",
+      #bg_color="blue",
+      bg_color="#00FF00",
+      #color="white",
+      color="#000000",
       #font="Arial", # font name from system and imageMagick
       font="/Users/monkeygeek/Documents/softProject/AIVideoTools/resource/fonts/STHeitiMedium.ttc",
-      stroke_color="black",
+      #stroke_color="black",
+      stroke_color="#FFFFFF",
       stroke_width=1.5,
       method="caption", # subtitle while drawn in a picture with fixed size
       kerning=1, # letter spacing
