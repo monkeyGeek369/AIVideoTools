@@ -12,4 +12,4 @@ openai~=1.59.8
 pysrt==1.1.2
 pydub==0.25.1
 scikit-image==0.25.0
-pytesseract==0.3.13
+easyocr~=1.7
