@@ -27,6 +27,9 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     voice_split_checkbox_value = None
     subtitle_split_checkbox_value = None
     bg_music_split_checkbox_value = None
+    subtitle_mosaic_checkbox_value = None
+    subtitle_identification_mode_value = None
+    mosaic_neighbor_value = None
 
     # create checkbox
     split_container=material_handler_form.container()
@@ -38,8 +41,13 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     with column3:
         subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split")
     with column4:
-        pass
-        #bg_music_split_checkbox_value = column4.checkbox(label=tr("bg_music_split"),key="bg_music_split",disabled=False)
+        subtitle_mosaic_checkbox_value = column4.checkbox(label=tr("subtitle_mosaic"),key="subtitle_mosaic",value=True)
+        if subtitle_mosaic_checkbox_value:
+            # subtitle mosaic
+            options = [tr("overall_statistics"),tr("frame_identification"),tr("mixed_treatment")]
+            subtitle_identification_mode_value = column4.radio(label=tr("subtitle_identification_mode"),options=options,key="subtitle_identification_mode",index=2)
+            # mosaic neighbor
+            mosaic_neighbor_value = column4.text_input(label=tr("mosaic_neighbor"),key="mosaic_neighbor",value="30")
 
     # create submit button
     submitted = material_handler_form.form_submit_button(label=tr("material_handler_submit"))

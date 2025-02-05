@@ -103,6 +103,12 @@
     "font_position":"字体位置",
     "stroke_color":"描边颜色",
     "stroke_width":"描边宽度",
-    "subtitle_info_not_found":"未找到字幕信息"
+    "subtitle_info_not_found":"未找到字幕信息",
+    "subtitle_mosaic":"字幕马赛克",
+    "subtitle_identification_mode":"字幕识别模式",
+    "overall_statistics":"整体统计",
+    "frame_identification":"帧识别",
+    "mixed_treatment":"混合处理",
+    "mosaic_neighbor":"马赛克块的大小"
   }
 }
