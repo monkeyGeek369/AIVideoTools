@@ -2,6 +2,10 @@ from moviepy.editor import VideoFileClip
 import os,re,easyocr
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+import torch
+
+print(torch.cuda.is_available())
+print(torch.__version__)
 
 reader = easyocr.Reader(
     lang_list=['ch_sim', 'en'],  # 语言列表
@@ -34,8 +38,11 @@ def test_video_subtitle_position_recognize():
                img.save(frame_path)
                
                # 识别图片中的文字
-               result = reader.readtext(frame_path, detail=1)
-               print(result)
+               result = reader.readtext(frame_path,# 读取图片
+                                        detail=1,
+                                        batch_size=10, # 批处理大小
+                                        )
+               #print(result)
 
                # 遍历识别结果
                for item in result:
