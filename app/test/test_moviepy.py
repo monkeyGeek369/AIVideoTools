@@ -1,5 +1,5 @@
 from moviepy.editor import VideoFileClip,TextClip,CompositeVideoClip
-import os
+import os,cv2
 
 def test_subtitle():
    # load video
@@ -60,6 +60,33 @@ def test_crop():
 
    cropped_clip.write_videofile("/Users/monkeygeek/Downloads/output.mp4", codec="libx264", fps=24)
 
+def apply_mosaic(frame, x1, y1, x2, y2, neighbor=10):
+    """
+    对指定区域添加马赛克效果
+    :param frame: 视频帧
+    :param x1: 马赛克区域左上角的 x 坐标
+    :param y1: 马赛克区域左上角的 y 坐标
+    :param x2: 马赛克区域右下角的 x 坐标
+    :param y2: 马赛克区域右下角的 y 坐标
+    :param neighbor: 马赛克块的大小
+    :return: 添加马赛克后的帧
+    """
+    # 获取指定区域
+    roi = frame[y1:y2, x1:x2]
+    # 对区域进行马赛克处理
+    roi = cv2.resize(roi, (roi.shape[1] // neighbor, roi.shape[0] // neighbor))
+    roi = cv2.resize(roi, (roi.shape[1] * neighbor, roi.shape[0] * neighbor))
+    # 将处理后的区域放回原图
+    copy_frame = frame.copy()
+    copy_frame[y1:y2, x1:x2] = roi
+    return copy_frame
+
+def add_mosaic_to_video():
+
+    video = VideoFileClip("F:\download\\test2.mp4")
+    video_with_mosaic = video.fl_image(lambda frame: apply_mosaic(frame, 100, 100, 400, 400, 50))
+    video_with_mosaic.write_videofile("F:\download\\test_mosaic_out.mp4", codec="libx264")
+
 if __name__ == '__main__':
    font_path = "F:\\softProject\\AIVideoTools\\resource\\fonts\\STHeitiMedium.ttc"
    relpath = os.path.relpath(font_path)
@@ -71,4 +98,7 @@ if __name__ == '__main__':
 
    # test crop
    #test_crop()
+
+   # test mosaic
+   add_mosaic_to_video()
 

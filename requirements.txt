@@ -13,3 +13,4 @@ pysrt==1.1.2
 pydub==0.25.1
 scikit-image==0.25.0
 easyocr~=1.7
+opencv-python~=4.11
