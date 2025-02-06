@@ -14,10 +14,21 @@ from moviepy.editor import (
     CompositeVideoClip,
     CompositeAudioClip
 )
-
-
+import numpy as np
+import os,easyocr
 from app.models.schema import VideoAspect, SubtitlePosition
+from collections import Counter
 
+
+reader = easyocr.Reader(
+    lang_list=['ch_sim', 'en'],  # 语言列表
+    gpu=True,  # 是否使用GPU
+    model_storage_directory='..\models\easyocr',  # 模型存储目录
+    download_enabled=True,  # 是否自动下载模型
+    detector=True,  # 是否启用文本检测
+    recognizer=True,  # 是否启用文本识别
+    verbose=True  # 是否显示详细信息
+)
 
 def wrap_text(text, max_width, font, fontsize=60):
     """
@@ -440,3 +451,96 @@ def generate_video_v3(
     if narration_path:
         narration.close()
 
+def video_subtitle_overall_statistics(video_path:str) -> dict[str,int]:
+    '''
+    video_path: video file path
+
+    return: dict[str,int]
+        left_top_x:int
+        left_top_y:int
+        right_bottom_x:int
+        right_bottom_y:int
+
+    '''
+    # load video
+    clip = VideoFileClip(video_path)
+    prev_frame = None
+
+    try:
+        coordinates = {}  # {frame_time: [(top_left, bottom_right), ...]}
+
+        for t, frame in clip.iter_frames(with_times=True):
+            if prev_frame is not None:
+                # 计算当前帧与前一帧的差异
+                diff = np.sum(np.abs(frame - prev_frame))
+                if diff > 1000000:
+                    video_frame = clip.get_frame(t)
+                    result = reader.readtext(video_frame,
+                                            detail=1,
+                                            batch_size=10, # 批处理大小
+                                            )
+                    
+                    # 遍历识别结果
+                    for item in result:
+                        text = item[1]
+                        if text.strip() and item[0] is not None and len(item[0]) == 4:
+                            top_left = tuple(map(int, item[0][0]))
+                            bottom_right = tuple(map(int, item[0][2]))
+                            if t not in coordinates:
+                                coordinates[t] = []
+                            coordinates[t].append((top_left, bottom_right))
+
+            prev_frame = frame
+    finally:
+        # 关闭视频文件
+        clip.close()
+    
+    # 处理坐标
+    final_coordinates = {}
+    for t, coords in coordinates.items():
+        filtered_coords = filter_coordinates(coords)
+        final_coordinates[t] = merge_coordinates(filtered_coords)
+
+    # 提取最终字幕区域
+    subtitle_regions = extract_subtitle_regions(final_coordinates)
+    print("Subtitle Regions:", subtitle_regions)
+
+def is_valid_coordinate(top_left, bottom_right, min_area=100):
+    x1, y1 = top_left
+    x2, y2 = bottom_right
+    if x1 >= x2 or y1 >= y2:
+        return False
+    area = (x2 - x1) * (y2 - y1)
+    return area >= min_area
+
+def filter_coordinates(coords):
+    valid_coords = []
+    for top_left, bottom_right in coords:
+        if is_valid_coordinate(top_left, bottom_right):
+            valid_coords.append((top_left, bottom_right))
+    return valid_coords
+def distance(coord1, coord2):
+    (x1, y1), (x2, y2) = coord1
+    (x3, y3), (x4, y4) = coord2
+    return ((x1 + x2) / 2 - (x3 + x4) / 2) ** 2 + ((y1 + y2) / 2 - (y3 + y4) / 2) ** 2
+
+def merge_coordinates(coords, threshold=100):
+    merged_coords = []
+    for coord in coords:
+        merged = False
+        for i, merged_coord in enumerate(merged_coords):
+            if distance(coord, merged_coord) < threshold:
+                merged_coords[i] = ((merged_coord[0][0] + coord[0][0]) / 2,
+                                    (merged_coord[0][1] + coord[0][1]) / 2),((merged_coord[1][0] + coord[1][0]) / 2,
+                                    (merged_coord[1][1] + coord[1][1]) / 2)
+                merged = True
+                break
+        if not merged:
+            merged_coords.append(coord)
+    return merged_coords
+
+def extract_subtitle_regions(final_coordinates):
+    all_coords = [coord for coords in final_coordinates.values() for coord in coords]
+    coord_counter = Counter(all_coords)
+    most_common_coords = coord_counter.most_common()
+    return most_common_coords
