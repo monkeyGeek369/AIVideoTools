@@ -17,7 +17,7 @@ from moviepy.editor import (
 import numpy as np
 import os,easyocr
 from app.models.schema import VideoAspect, SubtitlePosition
-from collections import Counter
+from collections import Counter,defaultdict
 
 
 reader = easyocr.Reader(
@@ -451,7 +451,7 @@ def generate_video_v3(
     if narration_path:
         narration.close()
 
-def video_subtitle_overall_statistics(video_path:str) -> dict[str,int]:
+def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int) -> dict[str,int]:
     '''
     video_path: video file path
 
@@ -460,7 +460,7 @@ def video_subtitle_overall_statistics(video_path:str) -> dict[str,int]:
         left_top_y:int
         right_bottom_x:int
         right_bottom_y:int
-
+        count:int
     '''
     # load video
     clip = VideoFileClip(video_path)
@@ -494,16 +494,30 @@ def video_subtitle_overall_statistics(video_path:str) -> dict[str,int]:
     finally:
         # 关闭视频文件
         clip.close()
-    
-    # 处理坐标
-    final_coordinates = {}
-    for t, coords in coordinates.items():
-        filtered_coords = filter_coordinates(coords)
-        final_coordinates[t] = merge_coordinates(filtered_coords)
+        
+    # 提取所有坐标
+    all_coords = [coord for coords in coordinates.values() for coord in coords]
 
-    # 提取最终字幕区域
-    subtitle_regions = extract_subtitle_regions(final_coordinates)
-    print("Subtitle Regions:", subtitle_regions)
+    # 对所有坐标进行过滤
+    all_coords = filter_coordinates(all_coords,min_area=min_area)
+
+    # 对所有坐标进行合并，并记录每个合并后区域的出现次数
+    merged_coords, counts = merge_coordinates_with_count(all_coords,threshold=distance_threshold)
+
+    # 找到出现次数最多的合并后区域
+    if merged_coords:
+        max_count = max(counts.values())
+        most_common_regions = [region for region, count in counts.items() if count == max_count]
+        most_common_region = most_common_regions[0]  # 如果有多个区域出现次数相同，选择第一个
+        return {
+            "left_top_x": most_common_region[0][0],
+            "left_top_y": most_common_region[0][1],
+            "right_bottom_x": most_common_region[1][0],
+            "right_bottom_y": most_common_region[1][1],
+            "count": max_count
+        }
+    else:
+        return None
 
 def is_valid_coordinate(top_left, bottom_right, min_area=100):
     x1, y1 = top_left
@@ -513,34 +527,37 @@ def is_valid_coordinate(top_left, bottom_right, min_area=100):
     area = (x2 - x1) * (y2 - y1)
     return area >= min_area
 
-def filter_coordinates(coords):
+def filter_coordinates(coords,min_area:int):
     valid_coords = []
     for top_left, bottom_right in coords:
-        if is_valid_coordinate(top_left, bottom_right):
+        if is_valid_coordinate(top_left, bottom_right,min_area=min_area):
             valid_coords.append((top_left, bottom_right))
     return valid_coords
+
 def distance(coord1, coord2):
     (x1, y1), (x2, y2) = coord1
     (x3, y3), (x4, y4) = coord2
     return ((x1 + x2) / 2 - (x3 + x4) / 2) ** 2 + ((y1 + y2) / 2 - (y3 + y4) / 2) ** 2
-
-def merge_coordinates(coords, threshold=100):
+    
+def merge_coordinates_with_count(coords, threshold=100):
+    # 使用字典记录每个合并后区域的出现次数
+    region_counts = defaultdict(int)
     merged_coords = []
+
     for coord in coords:
         merged = False
         for i, merged_coord in enumerate(merged_coords):
             if distance(coord, merged_coord) < threshold:
-                merged_coords[i] = ((merged_coord[0][0] + coord[0][0]) / 2,
-                                    (merged_coord[0][1] + coord[0][1]) / 2),((merged_coord[1][0] + coord[1][0]) / 2,
-                                    (merged_coord[1][1] + coord[1][1]) / 2)
+                merged_coords[i] = (
+                    ((merged_coord[0][0] + coord[0][0]) / 2, (merged_coord[0][1] + coord[0][1]) / 2),
+                    ((merged_coord[1][0] + coord[1][0]) / 2, (merged_coord[1][1] + coord[1][1]) / 2)
+                )
+                region_counts[merged_coords[i]] += 1
                 merged = True
                 break
         if not merged:
             merged_coords.append(coord)
-    return merged_coords
+            region_counts[coord] += 1
 
-def extract_subtitle_regions(final_coordinates):
-    all_coords = [coord for coords in final_coordinates.values() for coord in coords]
-    coord_counter = Counter(all_coords)
-    most_common_coords = coord_counter.most_common()
-    return most_common_coords
+    return merged_coords, region_counts
+
