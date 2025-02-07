@@ -61,30 +61,45 @@ def test_crop():
    cropped_clip.write_videofile("/Users/monkeygeek/Downloads/output.mp4", codec="libx264", fps=24)
 
 def apply_mosaic(frame, x1, y1, x2, y2, neighbor=10):
-    """
-    对指定区域添加马赛克效果
-    :param frame: 视频帧
-    :param x1: 马赛克区域左上角的 x 坐标
-    :param y1: 马赛克区域左上角的 y 坐标
-    :param x2: 马赛克区域右下角的 x 坐标
-    :param y2: 马赛克区域右下角的 y 坐标
-    :param neighbor: 马赛克块的大小
-    :return: 添加马赛克后的帧
-    """
-    # 获取指定区域
-    roi = frame[y1:y2, x1:x2]
-    # 对区域进行马赛克处理
-    roi = cv2.resize(roi, (roi.shape[1] // neighbor, roi.shape[0] // neighbor))
-    roi = cv2.resize(roi, (roi.shape[1] * neighbor, roi.shape[0] * neighbor))
-    # 将处理后的区域放回原图
-    copy_frame = frame.copy()
-    copy_frame[y1:y2, x1:x2] = roi
-    return copy_frame
+   """
+   对指定区域添加马赛克效果
+   :param frame: 视频帧
+   :param x1: 马赛克区域左上角的 x 坐标
+   :param y1: 马赛克区域左上角的 y 坐标
+   :param x2: 马赛克区域右下角的 x 坐标
+   :param y2: 马赛克区域右下角的 y 坐标
+   :param neighbor: 马赛克块的大小
+   :return: 添加马赛克后的帧
+   """
+   if neighbor <= 0:
+      raise ValueError("Neighbor must be a positive integer.")
+    
+   # 提取感兴趣区域
+   roi = frame[y1:y2, x1:x2]
+   
+   # 检查 ROI 尺寸是否有效
+   if roi.shape[1] == 0 or roi.shape[0] == 0:
+      raise ValueError("ROI dimensions must be greater than zero.")
+   
+   # 计算目标尺寸
+   target_width = max(1, roi.shape[1] // neighbor)
+   target_height = max(1, roi.shape[0] // neighbor)
+   
+   # 缩放 ROI
+   roi = cv2.resize(roi, (target_width, target_height))
+   
+   # 将缩放后的 ROI 放大回原尺寸
+   roi = cv2.resize(roi, (x2 - x1, y2 - y1), interpolation=cv2.INTER_NEAREST)
+   
+   # 将处理后的 ROI 放回原图
+   copy_frame = frame.copy()
+   copy_frame[y1:y2, x1:x2] = roi
+   return copy_frame
 
 def add_mosaic_to_video():
 
     video = VideoFileClip("F:\download\\test2.mp4")
-    video_with_mosaic = video.fl_image(lambda frame: apply_mosaic(frame, 100, 100, 400, 400, 50))
+    video_with_mosaic = video.fl_image(lambda frame: apply_mosaic(frame, 109, 555, 155, 571, 40))
     video_with_mosaic.write_videofile("F:\download\\test_mosaic_out.mp4", codec="libx264")
 
 if __name__ == '__main__':

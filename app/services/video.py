@@ -469,28 +469,32 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     try:
         coordinates = {}  # {frame_time: [(top_left, bottom_right), ...]}
 
-        for t, frame in clip.iter_frames(with_times=True):
-            if prev_frame is not None:
-                # 计算当前帧与前一帧的差异
-                diff = np.sum(np.abs(frame - prev_frame))
-                if diff > 1000000:
-                    video_frame = clip.get_frame(t)
-                    result = reader.readtext(video_frame,
-                                            detail=1,
-                                            batch_size=10, # 批处理大小
-                                            )
-                    
-                    # 遍历识别结果
-                    for item in result:
-                        text = item[1]
-                        if text.strip() and item[0] is not None and len(item[0]) == 4:
-                            top_left = tuple(map(int, item[0][0]))
-                            bottom_right = tuple(map(int, item[0][2]))
-                            if t not in coordinates:
-                                coordinates[t] = []
-                            coordinates[t].append((top_left, bottom_right))
+        frame_index = 0
 
-            prev_frame = frame
+        for t, frame in clip.iter_frames(with_times=True):
+            frame_index += 1
+            if frame_index % 3 == 0:
+                if prev_frame is not None:
+                    # 计算当前帧与前一帧的差异
+                    diff = np.sum(np.abs(frame - prev_frame))
+                    if diff > 1000000:
+                        video_frame = clip.get_frame(t)
+                        result = reader.readtext(video_frame,
+                                                detail=1,
+                                                batch_size=10, # 批处理大小
+                                                )
+                        
+                        # 遍历识别结果
+                        for item in result:
+                            text = item[1]
+                            if text.strip() and item[0] is not None and len(item[0]) == 4:
+                                top_left = tuple(map(int, item[0][0]))
+                                bottom_right = tuple(map(int, item[0][2]))
+                                if t not in coordinates:
+                                    coordinates[t] = []
+                                coordinates[t].append((top_left, bottom_right))
+
+                prev_frame = frame
     finally:
         # 关闭视频文件
         clip.close()

@@ -3,6 +3,9 @@ import os,re,easyocr
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 import torch
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
+from app.services.video import video_subtitle_overall_statistics
 
 print(torch.cuda.is_available())
 print(torch.__version__)
@@ -66,7 +69,11 @@ def test_video_subtitle_position_recognize():
 
 if __name__ == '__main__':
    # test video subtitle position recognize
-   test_video_subtitle_position_recognize()
+   #test_video_subtitle_position_recognize()
+
+   # test video_subtitle_overall_statistics
+   result = video_subtitle_overall_statistics("F:\download\\test2.mp4", 100, 100)
+   print(result)
 
 
 
