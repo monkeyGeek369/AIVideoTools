@@ -520,6 +520,9 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
         return None
 
 def is_valid_coordinate(top_left, bottom_right, min_area=100):
+    '''
+    valid coordinate area >= min_area
+    '''
     x1, y1 = top_left
     x2, y2 = bottom_right
     if x1 >= x2 or y1 >= y2:
@@ -528,6 +531,9 @@ def is_valid_coordinate(top_left, bottom_right, min_area=100):
     return area >= min_area
 
 def filter_coordinates(coords,min_area:int):
+    '''
+    filter invalid coordinates
+    '''
     valid_coords = []
     for top_left, bottom_right in coords:
         if is_valid_coordinate(top_left, bottom_right,min_area=min_area):
@@ -535,11 +541,17 @@ def filter_coordinates(coords,min_area:int):
     return valid_coords
 
 def distance(coord1, coord2):
+    '''
+    get distance between two Center of rectangle
+    '''
     (x1, y1), (x2, y2) = coord1
     (x3, y3), (x4, y4) = coord2
     return ((x1 + x2) / 2 - (x3 + x4) / 2) ** 2 + ((y1 + y2) / 2 - (y3 + y4) / 2) ** 2
     
 def merge_coordinates_with_count(coords, threshold=100):
+    '''
+    merge coordinates and get region counts
+    '''
     # 使用字典记录每个合并后区域的出现次数
     region_counts = defaultdict(int)
     merged_coords = []
