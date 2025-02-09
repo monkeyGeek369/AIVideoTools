@@ -161,6 +161,7 @@ def render_position_settings(tr):
         (tr("Center"), "center"),
         (tr("Bottom"), "bottom"),
         (tr("Custom"), "custom"),
+        (tr("Origin_subtitle_position"), "Origin_subtitle_position"),
     ]
 
     selected_index = st.selectbox(

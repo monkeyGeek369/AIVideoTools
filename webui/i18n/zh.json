@@ -107,6 +107,7 @@
     "ignore_subtitle_area":"忽略字幕区域面积（像素）",
     "min_subtitle_merge_distance":"最小字幕合并距离（像素）",
     "subtitle_position":"字幕位置",
-    "subtitle_position_tips":"字幕位置展示列表"
+    "subtitle_position_tips":"字幕位置展示列表",
+    "Origin_subtitle_position":"原始字幕位置(自动对原字幕马赛克)"
   }
 }
