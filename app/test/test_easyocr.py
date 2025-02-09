@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
-from app.services.video import video_subtitle_overall_statistics
+from app.services.video import video_subtitle_overall_statistics,distance
 
 print(torch.cuda.is_available())
 print(torch.__version__)
@@ -72,7 +72,10 @@ if __name__ == '__main__':
    #test_video_subtitle_position_recognize()
 
    # test video_subtitle_overall_statistics
-   result = video_subtitle_overall_statistics("F:\download\\test2.mp4", 100, 100)
+   result = video_subtitle_overall_statistics("F:\download\\test2.mp4", 500, 50)
+
+   # test distance
+   #result = distance([(145, 1615), (937, 1790)],[(184, 1754), (891, 1848)])
    print(result)
 
 

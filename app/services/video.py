@@ -506,12 +506,12 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     all_coords = filter_coordinates(all_coords,min_area=min_area)
 
     # 对所有坐标进行合并，并记录每个合并后区域的出现次数
-    merged_coords, counts = merge_coordinates_with_count(all_coords,threshold=distance_threshold)
+    merged_counts = merge_coordinates_with_count(all_coords,threshold=distance_threshold)
 
     # 找到出现次数最多的合并后区域
-    if merged_coords:
-        max_count = max(counts.values())
-        most_common_regions = [region for region, count in counts.items() if count == max_count]
+    if merged_counts:
+        max_count = max(merged_counts.values())
+        most_common_regions = [region for region, count in merged_counts.items() if count == max_count]
         most_common_region = most_common_regions[0]  # 如果有多个区域出现次数相同，选择第一个
         return {
             "left_top_x": most_common_region[0][0],
@@ -546,11 +546,22 @@ def filter_coordinates(coords,min_area:int):
 
 def distance(coord1, coord2):
     '''
-    get distance between two Center of rectangle
+    Calculate the distance between the centers of two rectangles.
+    Each rectangle is defined by its two diagonal points.
     '''
+    # 解析矩形的对角点坐标
     (x1, y1), (x2, y2) = coord1
     (x3, y3), (x4, y4) = coord2
-    return ((x1 + x2) / 2 - (x3 + x4) / 2) ** 2 + ((y1 + y2) / 2 - (y3 + y4) / 2) ** 2
+
+    # 计算两个矩形的中心点坐标
+    center1_x = (x1 + x2) / 2
+    center1_y = (y1 + y2) / 2
+    center2_x = (x3 + x4) / 2
+    center2_y = (y3 + y4) / 2
+
+    # 计算两个中心点之间的欧几里得距离
+    distance = ((center1_x - center2_x) ** 2 + (center1_y - center2_y) ** 2) ** 0.5
+    return distance
     
 def merge_coordinates_with_count(coords, threshold=100):
     '''
@@ -565,15 +576,15 @@ def merge_coordinates_with_count(coords, threshold=100):
         for i, merged_coord in enumerate(merged_coords):
             if distance(coord, merged_coord) < threshold:
                 merged_coords[i] = (
-                    ((merged_coord[0][0] + coord[0][0]) / 2, (merged_coord[0][1] + coord[0][1]) / 2),
-                    ((merged_coord[1][0] + coord[1][0]) / 2, (merged_coord[1][1] + coord[1][1]) / 2)
+                    (int(min(merged_coord[0][0],coord[0][0])), int(min(merged_coord[0][1],coord[0][1]))),
+                    (int(max(merged_coord[1][0],coord[1][0])), int(max(merged_coord[1][1],coord[1][1])))
                 )
-                region_counts[merged_coords[i]] += 1
+                region_counts[i] += 1
                 merged = True
                 break
         if not merged:
+            region_counts[len(merged_coords)] += 1
             merged_coords.append(coord)
-            region_counts[coord] += 1
-
-    return merged_coords, region_counts
+            
+    return {tuple(coord): count for coord, count in zip(merged_coords, region_counts.values())}
 
