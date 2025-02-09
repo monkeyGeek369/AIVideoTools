@@ -102,13 +102,6 @@
     "Custom":"Custom Position (70, represents 70% from the top)",
     "font_position":"font position",
     "stroke_color":"stroke color",
-    "stroke_width":"stroke width",
-    "subtitle_info_not_found":"subtitle info not found",
-    "subtitle_mosaic":"subtitle mosaic",
-    "subtitle_identification_mode":"subtitle identification mode",
-    "overall_statistics":"overall statistics",
-    "frame_identification":"frame identification",
-    "mixed_treatment":"mixed treatment",
-    "mosaic_neighbor":"mosaic pixel size"
+    "stroke_width":"stroke width"
   }
 }
