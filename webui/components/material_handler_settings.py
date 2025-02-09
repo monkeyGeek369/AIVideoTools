@@ -27,9 +27,6 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     voice_split_checkbox_value = None
     subtitle_split_checkbox_value = None
     bg_music_split_checkbox_value = None
-    subtitle_mosaic_checkbox_value = None
-    subtitle_identification_mode_value = None
-    mosaic_neighbor_value = None
 
     # create checkbox
     split_container=material_handler_form.container()
@@ -41,13 +38,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     with column3:
         subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split")
     with column4:
-        subtitle_mosaic_checkbox_value = column4.checkbox(label=tr("subtitle_mosaic"),key="subtitle_mosaic",value=True)
-        if subtitle_mosaic_checkbox_value:
-            # subtitle mosaic
-            options = ["1" + " - "+ tr("overall_statistics"),"2" + " - "+ tr("frame_identification"),"3" + " - "+ tr("mixed_treatment")]
-            subtitle_identification_mode_value = column4.radio(label=tr("subtitle_identification_mode"),options=options,key="subtitle_identification_mode",index=2)
-            # mosaic neighbor
-            mosaic_neighbor_value = column4.text_input(label=tr("mosaic_neighbor"),key="mosaic_neighbor",value="30")
+        pass
 
     # create submit button
     submitted = material_handler_form.form_submit_button(label=tr("material_handler_submit"))
@@ -71,10 +62,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                                                       voice_split_checkbox_value,
                                                       subtitle_split_checkbox_value,
                                                       bg_music_split_checkbox_value,
-                                                      container_dict,
-                                                      subtitle_mosaic_checkbox_value,
-                                                      subtitle_identification_mode_value,
-                                                      mosaic_neighbor_value)
+                                                      container_dict)
                     st.success(tr("material_handler_submit_success"))
                 except Exception as e:
                     logger.error(tr("material_handler_submit_error")+": "+str(e))
@@ -92,8 +80,7 @@ def save_uploaded_origin_videos(videos:list[UploadedFile]):
     for video in videos:
         file_utils.save_uploaded_file(uploaded_file=video,save_dir=origin_videos,allowed_types=['.mp4','.webm'])
 
-def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator],
-                                      subtitle_mosaic:bool,subtitle_identification:str,mosaic_neighbor:str):
+def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator]):
     # get task path
     task_path = st.session_state['task_path']
 
@@ -142,9 +129,6 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             if not os.path.exists(audio_file):
                 split_video(material_voices_path,origin_video)
             pass
-        if subtitle_mosaic:
-            video_path = os.path.join(material_videos_path,origin_video.name+".mp4")
-            video_subtitle_mosaic(video_path,subtitle_identification.split(" - ")[0],int(mosaic_neighbor))
 
     # show material
     show_materials(container_dict["material_video_expander"],container_dict["material_bg_music_expander"],container_dict["material_voice_expander"],container_dict["material_subtitle_expander"])
@@ -194,13 +178,4 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
                 label_visibility="collapsed",
                 key=material_subtitle.name
             )
-
-def video_subtitle_mosaic(video_path:str,subtitle_identification_code:str,mosaic_neighbor:int):
-    if not os.path.exists(video_path):
-        return
-    # overall statistics
-
-    # fram identification
-
-    # mixed treatment
 
