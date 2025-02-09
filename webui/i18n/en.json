@@ -102,6 +102,11 @@
     "Custom":"Custom Position (70, represents 70% from the top)",
     "font_position":"font position",
     "stroke_color":"stroke color",
-    "stroke_width":"stroke width"
+    "stroke_width":"stroke width",
+    "subtitle_position_recognize":"Recognize subtitle position",
+    "ignore_subtitle_area":"Ignore subtitle area (pixel)",
+    "min_subtitle_merge_distance":"Minimum subtitle merge distance (pixel)",
+    "subtitle_position":"subtitle position",
+    "subtitle_position_tips":"subtitle position show list"
   }
 }

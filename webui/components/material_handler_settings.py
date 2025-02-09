@@ -3,11 +3,12 @@ import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from app.utils import file_utils,utils
 from loguru import logger
-import os,time
+import os
 from moviepy.editor import VideoFileClip
 from moviepy.editor import AudioFileClip
-from app.services import subtitle
+from app.services import subtitle,video
 from app.models.file_info import LocalFileInfo
+from app.models.subtitle_position_coord import SubtitlePositionCoord
 
 
 def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
@@ -27,6 +28,9 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     voice_split_checkbox_value = None
     subtitle_split_checkbox_value = None
     bg_music_split_checkbox_value = None
+    subtitle_position_recognize_checkbox_value = None
+    ignore_subtitle_area = None
+    min_subtitle_merge_distance = None
 
     # create checkbox
     split_container=material_handler_form.container()
@@ -38,7 +42,9 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     with column3:
         subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split")
     with column4:
-        pass
+        subtitle_position_recognize_checkbox_value = column4.checkbox(label=tr("subtitle_position_recognize"),key="subtitle_position_recognize",value=True)
+        ignore_subtitle_area = column4.text_input(label=tr("ignore_subtitle_area"),key="ignore_subtitle_area",value=500)
+        min_subtitle_merge_distance = column4.text_input(label=tr("min_subtitle_merge_distance"),key="min_subtitle_merge_distance",value=100)
 
     # create submit button
     submitted = material_handler_form.form_submit_button(label=tr("material_handler_submit"))
@@ -62,7 +68,10 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                                                       voice_split_checkbox_value,
                                                       subtitle_split_checkbox_value,
                                                       bg_music_split_checkbox_value,
-                                                      container_dict)
+                                                      container_dict,
+                                                      subtitle_position_recognize_checkbox_value,
+                                                      ignore_subtitle_area,
+                                                      min_subtitle_merge_distance)
                     st.success(tr("material_handler_submit_success"))
                 except Exception as e:
                     logger.error(tr("material_handler_submit_error")+": "+str(e))
@@ -80,7 +89,8 @@ def save_uploaded_origin_videos(videos:list[UploadedFile]):
     for video in videos:
         file_utils.save_uploaded_file(uploaded_file=video,save_dir=origin_videos,allowed_types=['.mp4','.webm'])
 
-def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator]):
+def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator],
+                                      subtitle_position_recognize:bool,ignore_subtitle_area:int,min_subtitle_merge_distance:int):
     # get task path
     task_path = st.session_state['task_path']
 
@@ -129,9 +139,15 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             if not os.path.exists(audio_file):
                 split_video(material_voices_path,origin_video)
             pass
+        if subtitle_position_recognize:
+            file_name = origin_video.name+".mp4"
+            video_path = os.path.join(material_videos_path,file_name)
+            recognize_subtitle_position(video_path,file_name,int(ignore_subtitle_area),int(min_subtitle_merge_distance))
 
     # show material
-    show_materials(container_dict["material_video_expander"],container_dict["material_bg_music_expander"],container_dict["material_voice_expander"],container_dict["material_subtitle_expander"])
+    show_materials(container_dict["material_video_expander"],container_dict["material_bg_music_expander"],
+                   container_dict["material_voice_expander"],container_dict["material_subtitle_expander"],
+                   container_dict["subtitle_position_expander"])
 
 def split_video(material_voices_path:str,origin_video:LocalFileInfo):
     utils.create_dir(material_voices_path)
@@ -143,7 +159,8 @@ def split_video(material_voices_path:str,origin_video:LocalFileInfo):
         )
     audio_clip.close()
 
-def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenerator,voice_container:DeltaGenerator,subtitle_container:DeltaGenerator):
+def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenerator,voice_container:DeltaGenerator,
+                   subtitle_container:DeltaGenerator,subtitle_position:DeltaGenerator):
     # get task path
     task_path = st.session_state['task_path']
 
@@ -178,4 +195,38 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
                 label_visibility="collapsed",
                 key=material_subtitle.name
             )
+    
+    # show subtitle position
+    subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
+    for file_name,coord in subtitle_position_dict.items():
+        subtitle_position.text_area(
+            file_name,
+            value=utils.to_json(coord),
+            height=150,
+            label_visibility="collapsed",
+            key=file_name
+        )
+
+
+def recognize_subtitle_position(video_path:str,file_name:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int):
+    # get subtitle position
+    position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance)
+
+    coord = None
+    if position_dict:
+        coord = SubtitlePositionCoord(
+            is_exist=True,
+            left_top_x=position_dict["left_top_x"],
+            left_top_y=position_dict["left_top_y"],
+            right_bottom_x=position_dict["right_bottom_x"],
+            right_bottom_y=position_dict["right_bottom_y"],
+            count=position_dict["count"]
+            )
+    else:
+        coord = SubtitlePositionCoord(is_exist=False)
+
+    # save subtitle position
+    subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
+    subtitle_position_dict[file_name] = coord
+    st.session_state['subtitle_position_dict'] = subtitle_position_dict
 

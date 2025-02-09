@@ -46,7 +46,11 @@ def render_video_meta_data(tr,st_container:DeltaGenerator) -> dict[str,DeltaGene
                 label_visibility="collapsed",
                 key=material_subtitle.name
             )
-
+    
+    # subtitle position expander
+    subtitle_position_expander = st_container.expander(label=tr("subtitle_position"),expanded=True)
+    subtitle_position_expander.write(tr("subtitle_position_tips"))
+    result['subtitle_position_expander'] = subtitle_position_expander
 
     return result
 

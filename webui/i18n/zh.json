@@ -102,6 +102,11 @@
     "Custom":"自定义位置（70，表示离顶部70%的位置）",
     "font_position":"字体位置",
     "stroke_color":"描边颜色",
-    "stroke_width":"描边宽度"
+    "stroke_width":"描边宽度",
+    "subtitle_position_recognize":"识别字幕位置",
+    "ignore_subtitle_area":"忽略字幕区域面积（像素）",
+    "min_subtitle_merge_distance":"最小字幕合并距离（像素）",
+    "subtitle_position":"字幕位置",
+    "subtitle_position_tips":"字幕位置展示列表"
   }
 }
