@@ -40,6 +40,8 @@ def render_compound_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
 def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,container_dict:dict[str,DeltaGenerator]):
     try:
         task_path = st.session_state['task_path']
+        mix_audio_clip = None
+        final_clip = None
 
         # get edit video
         edit_video_path = st.session_state['edit_video_path']
@@ -236,7 +238,7 @@ def get_subtitle_clips(video_height,video_path:str) -> list[TextClip]:
 
     recognize_position_model = None|SubtitlePositionCoord
     # auto subtitle recognized and mosaic
-    if position == SubtitlePosition.ORIGIN:
+    if subtitle_params['position'] == SubtitlePosition.ORIGIN:
         subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
         recognize_poistion = subtitle_position_dict.get(os.path.basename(video_path))
         recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
@@ -277,7 +279,7 @@ def get_subtitle_clips(video_height,video_path:str) -> list[TextClip]:
 
                 # 计算字幕位置
                 position = None
-                if position == SubtitlePosition.ORIGIN and recognize_position_model.is_exist:
+                if subtitle_params['position'] == SubtitlePosition.ORIGIN and recognize_position_model.is_exist:
                     position = (recognize_position_model.left_top_x,  recognize_position_model.left_top_y + (recognize_position_model.right_bottom_y - recognize_position_model.left_top_y)/2)
                 else:
                     position = video.calculate_subtitle_position(
