@@ -226,7 +226,8 @@ def recognize_subtitle_position(video_path:str,file_name:str,ignore_subtitle_are
         coord = SubtitlePositionCoord(is_exist=False)
 
     # save subtitle position
+    # 临时先只记录一个字幕位置识别结果
     subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
-    subtitle_position_dict[file_name] = coord
+    subtitle_position_dict["edit_video.mp4"] = coord
     st.session_state['subtitle_position_dict'] = subtitle_position_dict
 

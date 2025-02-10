@@ -240,7 +240,7 @@ def get_subtitle_clips(video_height,video_path:str) -> list[TextClip]:
     # auto subtitle recognized and mosaic
     if subtitle_params['position'] == SubtitlePosition.ORIGIN:
         subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
-        recognize_poistion = subtitle_position_dict.get(os.path.basename(video_path))
+        recognize_poistion = subtitle_position_dict.get("edit_video.mp4")
         recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
         video.video_subtitle_mosaic_auto(video_path=video_path,subtitle_position_coord=recognize_position_model)
 
