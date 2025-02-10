@@ -347,4 +347,5 @@ class SubtitlePosition(str, Enum):
     CENTER = "center"
     BOTTOM = "bottom"
     CUSTOM = "custom"
+    ORIGIN = "origin_subtitle_position"
 

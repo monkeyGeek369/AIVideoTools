@@ -18,6 +18,19 @@ import numpy as np
 import os,easyocr
 from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
+from app.models.subtitle_position_coord import SubtitlePositionCoord
+from app.services import mosaic
+
+
+reader = easyocr.Reader(
+    lang_list=['ch_sim', 'en'],  # 语言列表
+    gpu=True,  # 是否使用GPU
+    model_storage_directory='..\models\easyocr',  # 模型存储目录
+    download_enabled=True,  # 是否自动下载模型
+    detector=True,  # 是否启用文本检测
+    recognizer=True,  # 是否启用文本识别
+    verbose=True  # 是否显示详细信息
+)
 
 
 reader = easyocr.Reader(
@@ -587,4 +600,94 @@ def merge_coordinates_with_count(coords, threshold=100):
             merged_coords.append(coord)
             
     return {tuple(coord): count for coord, count in zip(merged_coords, region_counts.values())}
+
+def is_overlap_over_half(base_rect, other_rect):
+    '''
+     judge if overlap over half of base_rect
+    '''
+
+    # 解析基础矩形和其他矩形的坐标
+    (base_left, base_top), (base_right, base_bottom) = base_rect
+    (other_left, other_top), (other_right, other_bottom) = other_rect
+
+    # 计算重叠区域的坐标
+    overlap_left = max(base_left, other_left)
+    overlap_top = max(base_top, other_top)
+    overlap_right = min(base_right, other_right)
+    overlap_bottom = min(base_bottom, other_bottom)
+
+    # 计算重叠区域的宽度和高度
+    overlap_width = overlap_right - overlap_left
+    overlap_height = overlap_bottom - overlap_top
+
+    # 判断是否有重叠
+    if overlap_width <= 0 or overlap_height <= 0:
+        return False
+
+    # 计算重叠面积和其他矩形的面积
+    overlap_area = overlap_width * overlap_height
+    other_area = (other_right - other_left) * (other_bottom - other_top)
+
+    # 判断重叠面积是否超过其他矩形面积的50%
+    return overlap_area > 0.5 * other_area
+
+def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:SubtitlePositionCoord|None):
+    '''
+    auto recognize subtitle and mosaic
+    subtitle position within the range subtitle_position_coord
+    '''
+    
+    # base check
+    if video_path is None:
+        raise Exception("video file not found")
+    if not os.path.exists(video_path):
+        raise Exception("video file not found")
+    if subtitle_position_coord is None:
+        raise Exception("video subtitle position not recognized,please recognize it first")
+    if not subtitle_position_coord.is_exist:
+        logger.info("video subtitle position recognized is empty, no need to mosaic")
+        return
+
+    # get subtitle position
+    base_rect = (
+        (subtitle_position_coord.left_top_x, subtitle_position_coord.left_top_y),
+        (subtitle_position_coord.right_bottom_x, subtitle_position_coord.right_bottom_y)
+    )
+
+    # load video
+    video = VideoFileClip(video_path)
+
+    try:
+        video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect))
+        video_with_mosaic.write_videofile(video_path, codec="libx264")
+    finally:
+        video.close()
+
+def recognize_subtitle_and_mosaic(frame,base_rect):
+    '''
+    recognize subtitle and mosaic
+    '''
+
+    frame_copy = frame.copy()
+    # recognize subtitle
+    result = reader.readtext(frame_copy,
+                            detail=1,
+                            batch_size=10, # 批处理大小
+                            )
+
+    # mosaic subtitle
+    for item in result:
+        text = item[1]
+        if text.strip() and item[0] is not None and len(item[0]) == 4:
+            top_left = tuple(map(int, item[0][0]))
+            bottom_right = tuple(map(int, item[0][2]))
+            if is_overlap_over_half(base_rect, (top_left, bottom_right)):
+               frame_copy = mosaic.apply_perspective_background_color(frame=frame_copy,
+                                                                      x1=top_left[0],
+                                                                      y1=top_left[1],
+                                                                      x2=bottom_right[0],
+                                                                      y2=bottom_right[1],
+                                                                      extend_factor = 2)
+    
+    return frame_copy
 

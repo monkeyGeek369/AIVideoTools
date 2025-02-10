@@ -6,6 +6,8 @@ from app.utils import file_utils,utils,cache
 import pysrt
 from loguru import logger
 from app.services import video
+from app.models.schema import SubtitlePosition
+from app.models.subtitle_position_coord import SubtitlePositionCoord
 
 
 
@@ -71,7 +73,7 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         # subtitle
         subtitle_clips = []
         if subtitle_check:
-            subtitle_clips = get_subtitle_clips(video_clip.h)
+            subtitle_clips = get_subtitle_clips(video_clip.h,edit_video_path)
             if subtitle_clips is None or len(subtitle_clips) == 0:
                 raise Exception(tr("subtitle_info_not_found"))
 
@@ -161,7 +163,7 @@ def render_position_settings(tr):
         (tr("Center"), "center"),
         (tr("Bottom"), "bottom"),
         (tr("Custom"), "custom"),
-        (tr("Origin_subtitle_position"), "Origin_subtitle_position"),
+        (tr("Origin_subtitle_position"), "origin_subtitle_position"),
     ]
 
     selected_index = st.selectbox(
@@ -224,13 +226,21 @@ def get_subtitle_params():
         'stroke_width': st.session_state.get('stroke_width', 1.5),
     }
 
-def get_subtitle_clips(video_height) -> list[TextClip]:
+def get_subtitle_clips(video_height,video_path:str) -> list[TextClip]:
     subtitle_path = st.session_state['edit_subtitle_path']
     subtitle_params = get_subtitle_params()
     font_path = utils.font_dir(subtitle_params['font_name'])
     if platform.system() == 'Windows':
         font_path = os.path.relpath(font_path)
         font_path =  "./"+font_path.replace(os.sep, '/')
+
+    recognize_position_model = None|SubtitlePositionCoord
+    # auto subtitle recognized and mosaic
+    if position == SubtitlePosition.ORIGIN:
+        subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
+        recognize_poistion = subtitle_position_dict.get(os.path.basename(video_path))
+        recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
+        video.video_subtitle_mosaic_auto(video_path=video_path,subtitle_position_coord=recognize_position_model)
 
     # base check
     if not os.path.exists(subtitle_path):
@@ -266,11 +276,15 @@ def get_subtitle_clips(video_height) -> list[TextClip]:
                     continue
 
                 # 计算字幕位置
-                position = video.calculate_subtitle_position(
-                    subtitle_params['position'],
-                    video_height,
-                    subtitle_params['custom_position']
-                )
+                position = None
+                if position == SubtitlePosition.ORIGIN and recognize_position_model.is_exist:
+                    position = (recognize_position_model.left_top_x,  recognize_position_model.left_top_y + (recognize_position_model.right_bottom_y - recognize_position_model.left_top_y)/2)
+                else:
+                    position = video.calculate_subtitle_position(
+                        subtitle_params['position'],
+                        video_height,
+                        subtitle_params['custom_position']
+                    )
 
                 # 创建最终的 TextClip
                 text_clip = (TextClip(
