@@ -682,7 +682,7 @@ def recognize_subtitle_and_mosaic(frame,base_rect):
             top_left = tuple(map(int, item[0][0]))
             bottom_right = tuple(map(int, item[0][2]))
             if is_overlap_over_half(base_rect, (top_left, bottom_right)):
-               frame_copy = mosaic.apply_perspective_background_color(frame=frame,
+               frame_copy = mosaic.apply_perspective_background_color(frame=frame_copy,
                                                                       x1=top_left[0],
                                                                       y1=top_left[1],
                                                                       x2=bottom_right[0],

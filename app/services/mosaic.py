@@ -105,13 +105,13 @@ def apply_perspective_background_color(frame, x1, y1, x2, y2,extend_factor):
    background_block = np.full((y2 - y1, x2 - x1, 3), background_color, dtype=np.uint8)
 
    # 使用透视变换模拟背景效果
-   src_pts = np.float32([[x1, y1], [x2, y1], [x2, y2], [x1, y2]])
-   dst_pts = np.float32([[x1, y1], [x2, y1], [x2, y2], [x1, y2]])
-   perspective_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-   warped_block = cv2.warpPerspective(background_block, perspective_matrix, (x2 - x1, y2 - y1))
+   # src_pts = np.float32([[x1, y1], [x2, y1], [x2, y2], [x1, y2]])
+   # dst_pts = np.float32([[x1, y1], [x2, y1], [x2, y2], [x1, y2]])
+   # perspective_matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
+   # warped_block = cv2.warpPerspective(background_block, perspective_matrix, (x2 - x1, y2 - y1))
 
    # 将透视变换后的颜色块覆盖到原图的指定区域
-   copy_frame[y1:y2, x1:x2] = warped_block
+   copy_frame[y1:y2, x1:x2] = background_block
 
    return copy_frame
 
