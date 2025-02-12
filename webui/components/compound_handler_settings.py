@@ -48,7 +48,11 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         if edit_video_path is None or os.path.exists(edit_video_path) is False:
             raise Exception(tr("edit_video_not_found"))
         
+        # get video base info
         video_clip = VideoFileClip(edit_video_path)
+        video_duration = video_clip.duration
+        video_height = video_clip.h
+        video_clip.close()
         audio_clips = []
         
         # bg music
@@ -58,10 +62,10 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
                 raise Exception(tr("edit_bg_music_not_found"))
             
             audio_clip = AudioFileClip(edit_bg_musics_path)
-            if audio_clip.duration < video_clip.duration:
-                audio_clip = audio_clip.set_duration(video_clip.duration).loop(duration=video_clip.duration)
-            elif audio_clip.duration > video_clip.duration:
-                audio_clip = audio_clip.set_duration(video_clip.duration)
+            if audio_clip.duration < video_duration:
+                audio_clip = audio_clip.set_duration(video_duration).loop(duration=video_duration)
+            elif audio_clip.duration > video_duration:
+                audio_clip = audio_clip.set_duration(video_duration)
             audio_clips.append(audio_clip)
         
         # voice
@@ -75,7 +79,7 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         # subtitle
         subtitle_clips = []
         if subtitle_check:
-            subtitle_clips = get_subtitle_clips(video_clip.h,edit_video_path)
+            subtitle_clips = get_subtitle_clips(video_height,edit_video_path,task_path)
             if subtitle_clips is None or len(subtitle_clips) == 0:
                 raise Exception(tr("subtitle_info_not_found"))
 
@@ -86,11 +90,11 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
 
         # save
         mix_audio_clip = CompositeAudioClip(audio_clips)
+        video_clip = VideoFileClip(edit_video_path)
         video_clip = video_clip.set_audio(mix_audio_clip)
         final_clip = video_clip
         if subtitle_clips and len(subtitle_clips) > 0:
             final_clip = CompositeVideoClip([video_clip] + subtitle_clips, size=video_clip.size)        
-            
             
         final_clip.write_videofile(
                 final_clip_path,
@@ -228,7 +232,7 @@ def get_subtitle_params():
         'stroke_width': st.session_state.get('stroke_width', 1.5),
     }
 
-def get_subtitle_clips(video_height,video_path:str) -> list[TextClip]:
+def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextClip]:
     subtitle_path = st.session_state['edit_subtitle_path']
     subtitle_params = get_subtitle_params()
     font_path = utils.font_dir(subtitle_params['font_name'])
@@ -242,7 +246,7 @@ def get_subtitle_clips(video_height,video_path:str) -> list[TextClip]:
         subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
         recognize_poistion = subtitle_position_dict.get("edit_video.mp4")
         recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
-        video.video_subtitle_mosaic_auto(video_path=video_path,subtitle_position_coord=recognize_position_model)
+        video.video_subtitle_mosaic_auto(video_path=video_path,subtitle_position_coord=recognize_position_model,task_path=task_path)
 
     # base check
     if not os.path.exists(subtitle_path):

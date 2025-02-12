@@ -15,11 +15,12 @@ from moviepy.editor import (
     CompositeAudioClip
 )
 import numpy as np
-import os,easyocr
+import os,easyocr,shutil
 from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
 from app.services import mosaic
+from app.utils import file_utils,utils
 
 
 reader = easyocr.Reader(
@@ -631,7 +632,7 @@ def is_overlap_over_half(base_rect, other_rect):
     # 判断重叠面积是否超过其他矩形面积的50%
     return overlap_area > 0.5 * other_area
 
-def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:SubtitlePositionCoord|None):
+def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:SubtitlePositionCoord|None,task_path:str):
     '''
     auto recognize subtitle and mosaic
     subtitle position within the range subtitle_position_coord
@@ -654,14 +655,22 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
         (subtitle_position_coord.right_bottom_x, subtitle_position_coord.right_bottom_y)
     )
 
+    # create temp video
+    temp_path = os.path.join(task_path, "tmp")
+    file_utils.ensure_directory(temp_path)
+    temp_video_path = os.path.join(temp_path, "edit_video_tmp.mp4")
+
     # load video
     video = VideoFileClip(video_path)
-
     try:
         video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect))
-        video_with_mosaic.write_videofile(video_path, codec="libx264")
+        video_with_mosaic.write_videofile(temp_video_path, codec="libx264")
     finally:
         video.close()
+
+    # replace old video
+    shutil.copy2(temp_video_path, video_path)
+    os.remove(temp_video_path)
 
 def recognize_subtitle_and_mosaic(frame,base_rect):
     '''
