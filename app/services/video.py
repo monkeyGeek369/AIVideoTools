@@ -21,17 +21,7 @@ from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
 from app.services import mosaic
 from app.utils import file_utils,utils
-
-
-reader = easyocr.Reader(
-    lang_list=['ch_sim', 'en'],  # 语言列表
-    gpu=True,  # 是否使用GPU
-    model_storage_directory='..\models\easyocr',  # 模型存储目录
-    download_enabled=True,  # 是否自动下载模型
-    detector=True,  # 是否启用文本检测
-    recognizer=True,  # 是否启用文本识别
-    verbose=True  # 是否显示详细信息
-)
+import torch
 
 
 reader = easyocr.Reader(
@@ -512,6 +502,9 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     finally:
         # 关闭视频文件
         clip.close()
+
+    # clean cache
+    torch.cuda.empty_cache()
         
     # 提取所有坐标
     all_coords = [coord for coords in coordinates.values() for coord in coords]

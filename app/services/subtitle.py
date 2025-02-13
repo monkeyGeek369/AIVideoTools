@@ -31,6 +31,8 @@ def create(audio_file, subtitle_file: str = ""):
     无返回值，但会在指定路径生成字幕文件。
     """
     global model, device, compute_type
+
+    # 加载 Whisper 模型check
     if not model:
         model_path = f"{utils.root_dir()}/app/models/faster-whisper-large-v2"
         model_bin_file = f"{model_path}/model.bin"
@@ -64,6 +66,8 @@ def create(audio_file, subtitle_file: str = ""):
                     logger.warning("回退到 CPU 模式")
                     device = "cpu"
                     compute_type = "int8"
+                    model = None
+                    torch.cuda.empty_cache()
             else:
                 logger.info("未检测到 CUDA，使用 CPU 模式")
                 device = "cpu"
@@ -72,6 +76,8 @@ def create(audio_file, subtitle_file: str = ""):
             logger.warning("未安装 torch，使用 CPU 模式")
             device = "cpu"
             compute_type = "int8"
+            model = None
+            torch.cuda.empty_cache()
 
         if device == "cpu":
             logger.info(f"使用 CPU 加载模型: {model_path}")
@@ -99,7 +105,13 @@ def create(audio_file, subtitle_file: str = ""):
             initial_prompt="以下是普通话的句子"
         )
     except Exception as e:
+        model = None
+        torch.cuda.empty_cache()
         raise Exception(f"Voice contains no text information: {str(e)}")
+
+    # clean cache
+    model = None
+    torch.cuda.empty_cache()
 
     logger.info(
         f"检测到的语言: '{info.language}', probability: {info.language_probability:.2f}"
