@@ -23,17 +23,6 @@ from app.services import mosaic
 from app.utils import file_utils,utils
 import torch
 
-
-reader = easyocr.Reader(
-    lang_list=['ch_sim', 'en'],  # 语言列表
-    gpu=True,  # 是否使用GPU
-    model_storage_directory='..\models\easyocr',  # 模型存储目录
-    download_enabled=True,  # 是否自动下载模型
-    detector=True,  # 是否启用文本检测
-    recognizer=True,  # 是否启用文本识别
-    verbose=True  # 是否显示详细信息
-)
-
 def wrap_text(text, max_width, font, fontsize=60):
     """
     文本自动换行处理
@@ -455,6 +444,17 @@ def generate_video_v3(
     if narration_path:
         narration.close()
 
+def create_easyocr_reader() -> easyocr.Reader:
+    return easyocr.Reader(
+        lang_list=['ch_sim', 'en'],  # 语言列表
+        gpu=True,  # 是否使用GPU
+        model_storage_directory='..\models\easyocr',  # 模型存储目录
+        download_enabled=True,  # 是否自动下载模型
+        detector=True,  # 是否启用文本检测
+        recognizer=True,  # 是否启用文本识别
+        verbose=True  # 是否显示详细信息
+    )
+
 def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int) -> dict[str,int]:
     '''
     video_path: video file path
@@ -469,6 +469,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     # load video
     clip = VideoFileClip(video_path)
     prev_frame = None
+    reader = create_easyocr_reader()
 
     try:
         coordinates = {}  # {frame_time: [(top_left, bottom_right), ...]}
@@ -502,9 +503,9 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     finally:
         # 关闭视频文件
         clip.close()
-
-    # clean cache
-    torch.cuda.empty_cache()
+        # clean cache
+        torch.cuda.empty_cache()
+        reader = None
         
     # 提取所有坐标
     all_coords = [coord for coords in coordinates.values() for coord in coords]
@@ -655,17 +656,20 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
 
     # load video
     video = VideoFileClip(video_path)
+    reader = create_easyocr_reader()
     try:
-        video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect))
+        video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect,reader=reader))
         video_with_mosaic.write_videofile(temp_video_path, codec="libx264")
     finally:
         video.close()
+        torch.cuda.empty_cache()
+        reader = None
 
     # replace old video
     shutil.copy2(temp_video_path, video_path)
     os.remove(temp_video_path)
 
-def recognize_subtitle_and_mosaic(frame,base_rect):
+def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     '''
     recognize subtitle and mosaic
     '''
