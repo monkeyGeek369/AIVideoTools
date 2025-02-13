@@ -3,7 +3,7 @@ import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from app.utils import file_utils,utils
 from loguru import logger
-import os
+import os,torch,gc
 from moviepy.editor import VideoFileClip
 from moviepy.editor import AudioFileClip
 from app.services import subtitle,video
@@ -76,6 +76,10 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                 except Exception as e:
                     logger.error(tr("material_handler_submit_error")+": "+str(e))
                     st.error(tr("material_handler_submit_error")+": "+str(e))
+                finally:
+                    # clear cache
+                    torch.cuda.empty_cache()
+                    gc.collect()
 
 def save_uploaded_origin_videos(videos:list[UploadedFile]):
     # get task path
