@@ -52,12 +52,13 @@ def create(audio_file, subtitle_file: str = ""):
             if torch.cuda.is_available():
                 try:
                     logger.info(f"尝试使用 CUDA 加载模型: {model_path}")
-                    model = WhisperModel(
-                        model_size_or_path=model_path,
-                        device="cuda",
-                        compute_type="float16",
-                        local_files_only=True
-                    )
+                    with torch.no_grad():
+                        model = WhisperModel(
+                            model_size_or_path=model_path,
+                            device="cuda",
+                            compute_type="float16",
+                            local_files_only=True
+                        )
                     device = "cuda"
                     compute_type = "float16"
                     logger.info("成功使用 CUDA 加载模型")
@@ -108,10 +109,6 @@ def create(audio_file, subtitle_file: str = ""):
         model = None
         torch.cuda.empty_cache()
         raise Exception(f"Voice contains no text information: {str(e)}")
-
-    # clean cache
-    model = None
-    torch.cuda.empty_cache()
 
     logger.info(
         f"检测到的语言: '{info.language}', probability: {info.language_probability:.2f}"
@@ -194,6 +191,13 @@ def create(audio_file, subtitle_file: str = ""):
     with open(subtitle_file, "w", encoding="utf-8") as f:
         f.write(sub)
     logger.info(f"subtitle file created: {subtitle_file}")
+
+    # clean cache
+    del model
+    del segments
+    del info
+    del subtitles
+    torch.cuda.empty_cache()
 
 
 def file_to_subtitles(filename):

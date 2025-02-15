@@ -503,9 +503,12 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     finally:
         # 关闭视频文件
         clip.close()
+        del clip
+        del reader
+        del prev_frame
         # clean cache
         torch.cuda.empty_cache()
-        reader = None
+
         
     # 提取所有坐标
     all_coords = [coord for coords in coordinates.values() for coord in coords]
@@ -662,8 +665,9 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
         video_with_mosaic.write_videofile(temp_video_path, codec="libx264")
     finally:
         video.close()
+        del video
+        del reader
         torch.cuda.empty_cache()
-        reader = None
 
     # replace old video
     shutil.copy2(temp_video_path, video_path)
