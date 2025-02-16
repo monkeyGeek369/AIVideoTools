@@ -224,7 +224,8 @@ def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subt
             left_top_y=position_dict["left_top_y"],
             right_bottom_x=position_dict["right_bottom_x"],
             right_bottom_y=position_dict["right_bottom_y"],
-            count=position_dict["count"]
+            count=position_dict["count"],
+            frame_subtitles_position=position_dict["frame_subtitles_position"]
             )
     else:
         coord = SubtitlePositionCoord(is_exist=False)

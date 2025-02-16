@@ -470,36 +470,30 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     clip = VideoFileClip(video_path)
     prev_frame = None
     reader = create_easyocr_reader()
+    frame_subtitles_position = {}
 
     try:
         coordinates = {}  # {frame_time: [(top_left, bottom_right), ...]}
 
-        frame_index = 0
-
         for t, frame in clip.iter_frames(with_times=True):
-            frame_index += 1
-            if frame_index % 3 == 0:
-                if prev_frame is not None:
-                    # 计算当前帧与前一帧的差异
-                    diff = np.sum(np.abs(frame - prev_frame))
-                    if diff > 1000000:
-                        video_frame = clip.get_frame(t)
-                        result = reader.readtext(video_frame,
-                                                detail=1,
-                                                batch_size=10, # 批处理大小
-                                                )
-                        
-                        # 遍历识别结果
-                        for item in result:
-                            text = item[1]
-                            if text.strip() and item[0] is not None and len(item[0]) == 4:
-                                top_left = tuple(map(int, item[0][0]))
-                                bottom_right = tuple(map(int, item[0][2]))
-                                if t not in coordinates:
-                                    coordinates[t] = []
-                                coordinates[t].append((top_left, bottom_right))
+            video_frame = clip.get_frame(t)
+            result = reader.readtext(video_frame,
+                                    detail=1,
+                                    batch_size=10, # 批处理大小
+                                    )
+            
+            frame_subtitles_position[t] = []
 
-                prev_frame = frame
+            # 遍历识别结果
+            for item in result:
+                text = item[1]
+                if text.strip() and item[0] is not None and len(item[0]) == 4:
+                    top_left = tuple(map(int, item[0][0]))
+                    bottom_right = tuple(map(int, item[0][2]))
+                    frame_subtitles_position[t].append((top_left, bottom_right))
+                    if t not in coordinates:
+                        coordinates[t] = []
+                    coordinates[t].append((top_left, bottom_right))
     finally:
         # 关闭视频文件
         clip.close()
@@ -524,12 +518,22 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
         max_count = max(merged_counts.values())
         most_common_regions = [region for region, count in merged_counts.items() if count == max_count]
         most_common_region = most_common_regions[0]  # 如果有多个区域出现次数相同，选择第一个
+
+        # 根据统计区域过滤每一帧的字幕区域
+        for t, coords in frame_subtitles_position.items():
+            frame_coords = []
+            for coord in coords:
+                if is_overlap_over_half(((most_common_region[0][0],most_common_region[0][1]),(most_common_region[1][0],most_common_region[1][1])), coord):
+                    frame_coords.append(coord)
+            frame_subtitles_position[t] = frame_coords
+
         return {
             "left_top_x": most_common_region[0][0],
             "left_top_y": most_common_region[0][1],
             "right_bottom_x": most_common_region[1][0],
             "right_bottom_y": most_common_region[1][1],
-            "count": max_count
+            "count": max_count,
+            "frame_subtitles_position":frame_subtitles_position
         }
     else:
         return None
@@ -651,6 +655,7 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
         (subtitle_position_coord.left_top_x, subtitle_position_coord.left_top_y),
         (subtitle_position_coord.right_bottom_x, subtitle_position_coord.right_bottom_y)
     )
+    frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
 
     # create temp video
     temp_path = os.path.join(task_path, "tmp")
@@ -659,14 +664,15 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
 
     # load video
     video = VideoFileClip(video_path)
-    reader = create_easyocr_reader()
+    # reader = create_easyocr_reader()
     try:
-        video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect,reader=reader))
-        video_with_mosaic.write_videofile(temp_video_path, codec="libx264")
+        video_with_mosaic = video.fl_image(lambda frame,t: make_frame_processor(frame,t,frame_subtitles_position))
+        #video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect,reader=reader))
+        video_with_mosaic.write_videofile(temp_video_path, codec="libx264", fps=video.fps)
     finally:
         video.close()
         del video
-        del reader
+        #del reader
         torch.cuda.empty_cache()
 
     # replace old video
@@ -701,3 +707,16 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     
     return frame_copy
 
+def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int]]]]):
+    frame_copy = frame.copy()
+
+    # 处理当前帧
+    for top_left, bottom_right in frame_subtitles_position.get(t, []):
+        frame_copy = mosaic.apply_perspective_background_color(frame=frame_copy,
+                                                                    x1=top_left[0],
+                                                                    y1=top_left[1],
+                                                                    x2=bottom_right[0],
+                                                                    y2=bottom_right[1],
+                                                                    extend_factor = 2)
+
+    return frame_copy

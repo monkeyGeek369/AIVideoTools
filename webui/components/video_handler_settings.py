@@ -46,6 +46,7 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
     try:
         video_list = []
         task_path = st.session_state['task_path']
+        video_fps = None
 
         # get all materials videos
         material_videos_path = os.path.join(task_path, "material_videos")
@@ -61,6 +62,7 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
         material_videos = []
         for video in video_list:
             material_videos.append(VideoFileClip(video))
+        video_fps = material_videos[0].fps
         final_clip = concatenate_videoclips(material_videos)
 
         # mirror
@@ -79,7 +81,15 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
         edit_videos_path = os.path.join(task_path, "edit_videos")
         file_utils.ensure_directory(edit_videos_path)
         final_clip_path = os.path.join(edit_videos_path, "edit_video.mp4")
-        final_clip.write_videofile(final_clip_path)
+        final_clip.write_videofile(
+            filename=final_clip_path,
+            codec="libx264",
+            fps=video_fps,
+            bitrate="5000k",
+            preset="medium",
+            remove_temp=True,
+            threads=8
+        )
 
         # show
         container_dict["edit_video_expander"].video(final_clip_path, format="video/mp4")
