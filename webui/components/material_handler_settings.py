@@ -146,7 +146,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
         if subtitle_position_recognize:
             file_name = origin_video.name+".mp4"
             video_path = os.path.join(material_videos_path,file_name)
-            recognize_subtitle_position(video_path,file_name,int(ignore_subtitle_area),int(min_subtitle_merge_distance))
+            recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance))
 
     # show material
     show_materials(container_dict["material_video_expander"],container_dict["material_bg_music_expander"],
@@ -212,7 +212,7 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
         )
 
 
-def recognize_subtitle_position(video_path:str,file_name:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int):
+def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int):
     # get subtitle position
     position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance)
 
@@ -230,7 +230,6 @@ def recognize_subtitle_position(video_path:str,file_name:str,ignore_subtitle_are
         coord = SubtitlePositionCoord(is_exist=False)
 
     # save subtitle position
-    # 临时先只记录一个字幕位置识别结果
     subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
     subtitle_position_dict["edit_video.mp4"] = coord
     st.session_state['subtitle_position_dict'] = subtitle_position_dict
