@@ -70,7 +70,6 @@ def render_subtitle_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         except Exception as e:
             st.error(e)
 
-
 def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str,llm_temperature:float,
                         st_container:DeltaGenerator,
                         material_subtitles:list[LocalFileInfo],
@@ -126,6 +125,11 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
             # add duration
             accumulated_duration += video_clip.duration
 
+        # merge subtitle time interval
+        for i, sub in enumerate(merged_subs):
+            if i != 0:
+                sub.start = sub.start + pysrt.SubRipTime(milliseconds=500)
+
         # merge subtitle path
         task_path = st.session_state['task_path']
         edit_subtitles_path = os.path.join(task_path, "edit_subtitles")
@@ -155,6 +159,8 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
         # clean up
         for clip in video_clips:
             clip.close()
+            del clip
+            del merged_subs
 
 def adjust_subtitle_timing(subtitle_content, time_offset):
     """调整字幕时间戳"""
