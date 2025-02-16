@@ -51,6 +51,16 @@ def render_video_meta_data(tr,st_container:DeltaGenerator) -> dict[str,DeltaGene
     subtitle_position_expander = st_container.expander(label=tr("subtitle_position"),expanded=True)
     subtitle_position_expander.write(tr("subtitle_position_tips"))
     result['subtitle_position_expander'] = subtitle_position_expander
+    subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
+    for file_name,coord in subtitle_position_dict.items():
+        subtitle_position_expander.text_area(
+            file_name,
+            value=utils.to_json(coord),
+            height=150,
+            label_visibility="collapsed",
+            key=file_name
+        )
+
 
     return result
 

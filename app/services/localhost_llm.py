@@ -1,4 +1,7 @@
 from openai import OpenAI
+import os
+# 设置 no_proxy 环境变量，使本地请求不经过代理
+os.environ['no_proxy'] = '127.0.0.1,localhost'
 
 def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float) -> str:
     client = OpenAI(base_url=base_url, api_key=api_key)
@@ -43,12 +46,18 @@ if __name__ == "__main__":
 00:00:05,780 --> 00:00:07,940
 小宝 跟姐姐说谢谢
             """
-    message = chat_single_content(base_url="http://localhost:1234/v1",
-                        api_key="lm-studio",
-                        model="qwen2.5-14b-instruct",
-                        prompt="你现在是一名中文视频字幕处理专家，给定中文字幕信息包含字幕index、字幕时间范围、字幕内容，当给到你字幕数据后希望你进行如下处理。-针对每一段字幕一定要重新生成字幕内容-新生成的字幕内容要与原字幕上下文语意相同但文字要有差异-新生成的字幕要满足原视频时间范围-直接输出处理后的中文字幕结果，无需输出其它内容-输出格式要与原格式相同-禁止带标点符号，可以用空格代替",
-                        content=content,
-                        temperature=0.7)
-    print(message)
+    # message = chat_single_content(base_url="http://localhost:1234/v1",
+    #                     api_key="lm-studio",
+    #                     model="qwen2.5-14b-instruct",
+    #                     prompt="你现在是一名中文视频字幕处理专家，给定中文字幕信息包含字幕index、字幕时间范围、字幕内容，当给到你字幕数据后希望你进行如下处理。-针对每一段字幕一定要重新生成字幕内容-新生成的字幕内容要与原字幕上下文语意相同但文字要有差异-新生成的字幕要满足原视频时间范围-直接输出处理后的中文字幕结果，无需输出其它内容-输出格式要与原格式相同-禁止带标点符号，可以用空格代替",
+    #                     content=content,
+    #                     temperature=0.7)
+    # print(message)
+
+    result = check_llm_status(base_url="http://localhost:1234/v1",
+                    api_key="lm-studio",
+                    model="qwen2.5-14b-instruct")
+    
+    print(result)
 
 
