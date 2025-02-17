@@ -455,7 +455,7 @@ def create_easyocr_reader() -> easyocr.Reader:
         verbose=True  # 是否显示详细信息
     )
 
-def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int) -> dict[str,int]:
+def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int) -> dict:
     '''
     video_path: video file path
 
@@ -465,6 +465,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
         right_bottom_x:int
         right_bottom_y:int
         count:int
+        frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int]]]]
     '''
     # load video
     clip = VideoFileClip(video_path)
@@ -651,10 +652,10 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
         return
 
     # get subtitle position
-    base_rect = (
-        (subtitle_position_coord.left_top_x, subtitle_position_coord.left_top_y),
-        (subtitle_position_coord.right_bottom_x, subtitle_position_coord.right_bottom_y)
-    )
+    # base_rect = (
+    #     (subtitle_position_coord.left_top_x, subtitle_position_coord.left_top_y),
+    #     (subtitle_position_coord.right_bottom_x, subtitle_position_coord.right_bottom_y)
+    # )
     frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
 
     # create temp video
@@ -666,12 +667,13 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
     video = VideoFileClip(video_path)
     # reader = create_easyocr_reader()
     try:
-        video_with_mosaic = video.fl_image(lambda frame,t: make_frame_processor(frame,t,frame_subtitles_position))
+        video_with_mosaic = video.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position))
         #video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect,reader=reader))
         video_with_mosaic.write_videofile(temp_video_path, codec="libx264", fps=video.fps)
     finally:
         video.close()
         del video
+        del video_with_mosaic
         #del reader
         torch.cuda.empty_cache()
 

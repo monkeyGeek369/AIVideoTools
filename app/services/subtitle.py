@@ -16,8 +16,6 @@ from app.utils import utils
 model_size = config.whisper.get("model_size", "faster-whisper-large-v2")
 device = config.whisper.get("device", "cpu")
 compute_type = config.whisper.get("compute_type", "int8")
-model = None
-
 
 def create(audio_file, subtitle_file: str = ""):
     """
@@ -30,22 +28,22 @@ def create(audio_file, subtitle_file: str = ""):
     返回:
     无返回值，但会在指定路径生成字幕文件。
     """
-    global model, device, compute_type
+    global device, compute_type
+    model = None
 
     # 加载 Whisper 模型check
-    if not model:
-        model_path = f"{utils.root_dir()}/app/models/faster-whisper-large-v2"
-        model_bin_file = f"{model_path}/model.bin"
-        if not os.path.isdir(model_path) or not os.path.isfile(model_bin_file):
-            logger.error(
-                "请先下载 whisper 模型\n\n"
-                "********************************************\n"
-                "下载地址：https://huggingface.co/guillaumekln/faster-whisper-large-v2\n"
-                "存放路径：app/models \n"
-                "********************************************\n"
-            )
-            return None
-
+    model_path = f"{utils.root_dir()}/app/models/faster-whisper-large-v2"
+    model_bin_file = f"{model_path}/model.bin"
+    if not os.path.isdir(model_path) or not os.path.isfile(model_bin_file):
+        logger.error(
+            "请先下载 whisper 模型\n\n"
+            "********************************************\n"
+            "下载地址：https://huggingface.co/guillaumekln/faster-whisper-large-v2\n"
+            "存放路径：app/models \n"
+            "********************************************\n"
+        )
+        return None
+    else:
         # 尝试使用 CUDA，如果失败则回退到 CPU
         try:
             import torch
