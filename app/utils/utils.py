@@ -427,8 +427,8 @@ def init_resources():
 
         # 检查字体文件
         font_files = [
-            ("SourceHanSansCN-Regular.otf",
-             "https://github.com/adobe-fonts/source-han-sans/raw/release/OTF/SimplifiedChinese/SourceHanSansSC-Regular.otf"),
+            ("SourceHanSansSC-Bold.otf",
+             "https://github.com/adobe-fonts/source-han-sans/raw/release/OTF/SimplifiedChinese/SourceHanSansSC-Bold.otf"),
             ("simhei.ttf", "C:/Windows/Fonts/simhei.ttf"),  # Windows 黑体
             ("simkai.ttf", "C:/Windows/Fonts/simkai.ttf"),  # Windows 楷体
             ("simsun.ttc", "C:/Windows/Fonts/simsun.ttc"),  # Windows 宋体
