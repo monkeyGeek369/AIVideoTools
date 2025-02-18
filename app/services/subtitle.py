@@ -197,7 +197,6 @@ def create(audio_file, subtitle_file: str = ""):
     del subtitles
     torch.cuda.empty_cache()
 
-
 def file_to_subtitles(filename):
     """
     将字幕文件转换为字幕列表。
@@ -228,8 +227,10 @@ def file_to_subtitles(filename):
                 current_text += line
     return times_texts
 
-
 def levenshtein_distance(s1, s2):
+    '''
+    计算字符串编辑距离
+    '''
     if len(s1) < len(s2):
         return levenshtein_distance(s2, s1)
 
@@ -248,105 +249,13 @@ def levenshtein_distance(s1, s2):
 
     return previous_row[-1]
 
-
 def similarity(a, b):
+    '''
+    计算字符串相似度
+    '''
     distance = levenshtein_distance(a.lower(), b.lower())
     max_length = max(len(a), len(b))
     return 1 - (distance / max_length)
-
-
-def correct(subtitle_file, video_script):
-    subtitle_items = file_to_subtitles(subtitle_file)
-    script_lines = utils.split_string_by_punctuations(video_script)
-
-    corrected = False
-    new_subtitle_items = []
-    script_index = 0
-    subtitle_index = 0
-
-    while script_index < len(script_lines) and subtitle_index < len(subtitle_items):
-        script_line = script_lines[script_index].strip()
-        subtitle_line = subtitle_items[subtitle_index][2].strip()
-
-        if script_line == subtitle_line:
-            new_subtitle_items.append(subtitle_items[subtitle_index])
-            script_index += 1
-            subtitle_index += 1
-        else:
-            combined_subtitle = subtitle_line
-            start_time = subtitle_items[subtitle_index][1].split(" --> ")[0]
-            end_time = subtitle_items[subtitle_index][1].split(" --> ")[1]
-            next_subtitle_index = subtitle_index + 1
-
-            while next_subtitle_index < len(subtitle_items):
-                next_subtitle = subtitle_items[next_subtitle_index][2].strip()
-                if similarity(
-                    script_line, combined_subtitle + " " + next_subtitle
-                ) > similarity(script_line, combined_subtitle):
-                    combined_subtitle += " " + next_subtitle
-                    end_time = subtitle_items[next_subtitle_index][1].split(" --> ")[1]
-                    next_subtitle_index += 1
-                else:
-                    break
-
-            if similarity(script_line, combined_subtitle) > 0.8:
-                logger.warning(
-                    f"Merged/Corrected - Script: {script_line}, Subtitle: {combined_subtitle}"
-                )
-                new_subtitle_items.append(
-                    (
-                        len(new_subtitle_items) + 1,
-                        f"{start_time} --> {end_time}",
-                        script_line,
-                    )
-                )
-                corrected = True
-            else:
-                logger.warning(
-                    f"Mismatch - Script: {script_line}, Subtitle: {combined_subtitle}"
-                )
-                new_subtitle_items.append(
-                    (
-                        len(new_subtitle_items) + 1,
-                        f"{start_time} --> {end_time}",
-                        script_line,
-                    )
-                )
-                corrected = True
-
-            script_index += 1
-            subtitle_index = next_subtitle_index
-
-    # 处理剩余的脚本行
-    while script_index < len(script_lines):
-        logger.warning(f"Extra script line: {script_lines[script_index]}")
-        if subtitle_index < len(subtitle_items):
-            new_subtitle_items.append(
-                (
-                    len(new_subtitle_items) + 1,
-                    subtitle_items[subtitle_index][1],
-                    script_lines[script_index],
-                )
-            )
-            subtitle_index += 1
-        else:
-            new_subtitle_items.append(
-                (
-                    len(new_subtitle_items) + 1,
-                    "00:00:00,000 --> 00:00:00,000",
-                    script_lines[script_index],
-                )
-            )
-        script_index += 1
-        corrected = True
-
-    if corrected:
-        with open(subtitle_file, "w", encoding="utf-8") as fd:
-            for i, item in enumerate(new_subtitle_items):
-                fd.write(f"{i + 1}\n{item[1]}\n{item[2]}\n\n")
-        logger.info("Subtitle corrected")
-    else:
-        logger.success("Subtitle is correct")
 
 def extract_audio_and_create_subtitle(video_file: str, subtitle_file: str = "") -> Optional[str]:
     """
@@ -401,6 +310,22 @@ def extract_audio_and_create_subtitle(video_file: str, subtitle_file: str = "") 
         logger.error(traceback.format_exc())
         return None
 
+def get_text_from_subtitle(sub) -> str:
+    '''
+    从字幕文件的单个字幕对象中获取字幕文本
+    '''
+
+    # 检查字幕文本是否为空
+    if not sub or not sub.text or sub.text.strip() == '':
+        return None
+
+    # 处理字幕文本：确保是字符串，并处理可能的列表情况
+    if isinstance(sub.text, (list, tuple)):
+        subtitle_text = ' '.join(str(item) for item in sub.text if item is not None)
+    else:
+        subtitle_text = str(sub.text)
+
+    return subtitle_text.strip()
 
 if __name__ == "__main__":
     task_id = "123456"

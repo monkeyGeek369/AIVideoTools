@@ -5,7 +5,7 @@ from moviepy.editor import VideoFileClip,AudioFileClip,CompositeAudioClip,TextCl
 from app.utils import file_utils,utils,cache
 import pysrt
 from loguru import logger
-from app.services import video
+from app.services import video,subtitle
 from app.models.schema import SubtitlePosition
 from app.models.subtitle_position_coord import SubtitlePositionCoord
 
@@ -264,19 +264,8 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
             end_time = sub.end.ordinal / 1000
 
             try:
-                # 检查字幕文本是否为空
-                if not sub.text or sub.text.strip() == '':
-                    logger.info(f"警告：第 {index + 1} 条字幕内容为空，已跳过")
-                    continue
-
-                # 处理字幕文本：确保是字符串，并处理可能的列表情况
-                if isinstance(sub.text, (list, tuple)):
-                    subtitle_text = ' '.join(str(item) for item in sub.text if item is not None)
-                else:
-                    subtitle_text = str(sub.text)
-
-                subtitle_text = subtitle_text.strip()
-
+                # 获取字幕文本
+                subtitle_text = subtitle.get_text_from_subtitle(sub)
                 if not subtitle_text:
                     logger.info(f"警告：第 {index + 1} 条字幕处理后为空，已跳过")
                     continue
