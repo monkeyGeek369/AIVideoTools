@@ -61,6 +61,10 @@ def init_global_state():
     """初始化全局状态"""
     if 'ui_language' not in st.session_state:
         st.session_state['ui_language'] = utils.get_system_locale()
+    if 'video_height' not in st.session_state:
+        st.session_state['video_height'] = 0
+    if 'video_width' not in st.session_state:
+        st.session_state['video_width'] = 0
 
 def render_language_settings(st_container):
     """渲染语言设置"""

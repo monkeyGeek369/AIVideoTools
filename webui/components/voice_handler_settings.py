@@ -121,6 +121,8 @@ def render_voice_preview(tr, voice_name,st_container:DeltaGenerator):
         st_container.audio(audio_file, format="audio/mp3")
         if os.path.exists(audio_file):
             os.remove(audio_file)
+    del sub_maker
+    del audio_file
 
 def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
     # get subtitles
@@ -173,6 +175,9 @@ def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
         for audio_file in audio_files:
             if os.path.exists(audio_file):
                 os.remove(audio_file)
+
+        del audio_files
+        del sub_maker_list
 
     # show final audio
     if final_audio is not None:

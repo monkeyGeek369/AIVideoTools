@@ -157,7 +157,7 @@ def render_font_settings(tr):
         st.session_state['text_fore_color'] = text_fore_color
 
     # auto get font size by vidio height
-    calculate_size = subtitle.calculate_font_size(st.session_state['video_height'])
+    calculate_size = subtitle.calculate_font_size(st.session_state.get('video_height'))
     with font_cols[1]:
         font_size = st.slider(
             tr("font_size"),
@@ -277,7 +277,7 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
                     continue
 
                 # 计算自动换行
-                subtitle_text = subtitle.auto_wrap_text(subtitle_text,font_path,subtitle_params['font_size'],st.session_state['video_width'] * 0.8)
+                subtitle_text = subtitle.auto_wrap_text(subtitle_text,font_path,subtitle_params['font_size'],st.session_state.get('video_width') * 0.8)
 
                 # 计算字幕位置
                 position = None
@@ -313,7 +313,7 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
         logger.info(f"警告：处理字幕文件时出错: {str(e)}")
     finally:
         if subs is not None:
-            subs.close()
+            subs = None
             del subs
 
     return subtitle_clips
