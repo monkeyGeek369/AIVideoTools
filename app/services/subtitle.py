@@ -9,6 +9,7 @@ from timeit import default_timer as timer
 from loguru import logger
 from moviepy.editor import VideoFileClip
 import os
+from PIL import ImageFont
 
 from app.config import config
 from app.utils import utils
@@ -326,6 +327,37 @@ def get_text_from_subtitle(sub) -> str:
         subtitle_text = str(sub.text)
 
     return subtitle_text.strip()
+
+def calculate_font_size(video_height):
+    '''
+    以视频为基准，根据视频高度计算字号
+    '''
+    # 定义基础参数（以常见的1080p横屏视频为基准）
+    BASE_HEIGHT = 1080  # 基准分辨率高度
+    BASE_FONT_SIZE = 48  # 在基准分辨率下的字号
+    
+    # 按当前视频高度与基准高度的比例缩放字号
+    font_size = int(BASE_FONT_SIZE * (video_height / BASE_HEIGHT))
+    
+    # 设置最小和最大字号限制（避免极端情况）
+    font_size = max(24, min(font_size, 72))
+    return font_size
+
+def auto_wrap_text(text, font_path, font_size, max_width):
+    font = ImageFont.truetype(font_path, font_size)
+    lines = []
+    current_line = []
+    
+    for word in text.split():
+        current_line.append(word)
+        line_width = font.getbbox(" ".join(current_line))[2]  # 测量当前行宽度
+        if line_width > max_width:
+            current_line.pop()
+            lines.append(" ".join(current_line))
+            current_line = [word]
+    
+    lines.append(" ".join(current_line))
+    return "\n".join(lines)
 
 if __name__ == "__main__":
     task_id = "123456"

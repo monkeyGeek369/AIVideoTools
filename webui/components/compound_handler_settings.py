@@ -144,7 +144,7 @@ def render_font_settings(tr):
     )
     st.session_state['font_name'] = font_name
 
-    # 字体大小 和 字幕大小
+    # 字体颜色
     font_cols = st.columns([0.3, 0.7])
     with font_cols[0]:
         text_fore_color = st.color_picker(
@@ -153,12 +153,14 @@ def render_font_settings(tr):
         )
         st.session_state['text_fore_color'] = text_fore_color
 
+    # auto get font size by vidio height
+    calculate_size = subtitle.calculate_font_size(st.session_state['video_height'])
     with font_cols[1]:
         font_size = st.slider(
             tr("font_size"),
             min_value=20,
             max_value=100,
-            value=60
+            value=calculate_size
         )
         st.session_state['font_size'] = font_size
 
@@ -174,7 +176,7 @@ def render_position_settings(tr):
 
     selected_index = st.selectbox(
         tr("font_position"),
-        index=2,
+        index=4,
         options=range(len(subtitle_positions)),
         format_func=lambda x: subtitle_positions[x][0],
     )
@@ -213,8 +215,8 @@ def render_style_settings(tr):
             tr("stroke_width"),
             min_value=0.0,
             max_value=10.0,
-            value=1.0,
-            step=0.01
+            value=0.5,
+            step=0.1
         )
         st.session_state['stroke_width'] = stroke_width
 
@@ -270,10 +272,13 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
                     logger.info(f"警告：第 {index + 1} 条字幕处理后为空，已跳过")
                     continue
 
+                # 计算自动换行
+                subtitle_text = subtitle.auto_wrap_text(subtitle_text,font_path,subtitle_params['font_size'],st.session_state['video_width'] * 0.8)
+
                 # 计算字幕位置
                 position = None
                 if subtitle_params['position'] == SubtitlePosition.ORIGIN and recognize_position_model.is_exist:
-                    position = (recognize_position_model.left_top_x,  recognize_position_model.left_top_y + (recognize_position_model.right_bottom_y - recognize_position_model.left_top_y)/2)
+                    position = ('center',  int(recognize_position_model.left_top_y))
                 else:
                     position = video.calculate_subtitle_position(
                         subtitle_params['position'],

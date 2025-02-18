@@ -126,6 +126,8 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
                 audio=False,
                 threads=8
                 )
+            st.session_state['video_height'] = video.h
+            st.session_state['video_width'] = video.w
             video.close()
         if split_voices:
             split_video(material_voices_path,origin_video)
