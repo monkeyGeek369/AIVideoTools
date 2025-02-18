@@ -14,9 +14,13 @@ def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:st
         temperature=temperature
     )
 
-    return completion.choices[0].message.content
+    result = completion.choices[0].message.content
+    client.close()
+    del client
+    return result
 
 def check_llm_status(base_url:str,api_key:str,model:str) -> bool:
+    client = None
     try:
         client = OpenAI(base_url=base_url, api_key=api_key)
         completion = client.chat.completions.create(
@@ -30,6 +34,10 @@ def check_llm_status(base_url:str,api_key:str,model:str) -> bool:
         return completion.choices[0].message.content is not None
     except Exception as e:
         return False
+    finally:
+        if client:
+            client.close()
+            del client
 
 
 if __name__ == "__main__":

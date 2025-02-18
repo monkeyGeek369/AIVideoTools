@@ -43,11 +43,14 @@ def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
 
 
 def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator],video_mirror:bool,video_stylize:bool,video_filter:str):
-    try:
-        video_list = []
-        task_path = st.session_state['task_path']
-        video_fps = None
+    
+    video_list = []
+    task_path = st.session_state['task_path']
+    video_fps = None
+    material_videos = []
+    final_clip = None
 
+    try:
         # get all materials videos
         material_videos_path = os.path.join(task_path, "material_videos")
         if not os.path.exists(material_videos_path):
@@ -59,7 +62,6 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
             raise Exception(tr("material_videos_not_exist"))
 
         # merge all videos
-        material_videos = []
         for video in video_list:
             material_videos.append(VideoFileClip(video))
         video_fps = material_videos[0].fps
@@ -97,6 +99,12 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
         
     except Exception as e:
         st_container.error(e)
+    finally:
+        del video_list
+        del video_fps
+        del material_videos
+        del final_clip
+        
 
 def video_filter_handler(clip:VideoFileClip,video_filter:str):
     if video_filter == "warm_sun":

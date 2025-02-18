@@ -160,7 +160,7 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
         for clip in video_clips:
             clip.close()
             del clip
-            del merged_subs
+        del merged_subs
 
 def adjust_subtitle_timing(subtitle_content, time_offset):
     """调整字幕时间戳"""
