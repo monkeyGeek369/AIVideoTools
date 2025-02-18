@@ -1,6 +1,6 @@
 from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
-import os,time,platform
+import os,time,platform,gc,torch
 from moviepy.editor import VideoFileClip,AudioFileClip,CompositeAudioClip,TextClip,CompositeVideoClip
 from app.utils import file_utils,utils,cache
 import pysrt
@@ -36,6 +36,9 @@ def render_compound_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                     compound_video(tr,bg_music_check,voice_check,subtitle_check,container_dict)
                 except Exception as e:
                     submit_container.error(e)
+                finally:
+                    torch.cuda.empty_cache()
+                    gc.collect()
     
 def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,container_dict:dict[str,DeltaGenerator]):
     try:
@@ -257,6 +260,7 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
         raise Exception(f"font file not found: {font_path}")
 
     subtitle_clips = []
+    subs = None
     try:
         subs = pysrt.open(subtitle_path)
         logger.info(f"读取到 {len(subs)} 条字幕")
@@ -307,6 +311,10 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
         logger.info(f"成功创建 {len(subtitle_clips)} 条字幕剪辑")
     except Exception as e:
         logger.info(f"警告：处理字幕文件时出错: {str(e)}")
+    finally:
+        if subs is not None:
+            subs.close()
+            del subs
 
     return subtitle_clips
 
