@@ -215,7 +215,7 @@ def render_style_settings(tr):
             tr("stroke_width"),
             min_value=0.0,
             max_value=10.0,
-            value=0.5,
+            value=max(0.5,round(st.session_state['font_size']/20,1)),
             step=0.1
         )
         st.session_state['stroke_width'] = stroke_width
