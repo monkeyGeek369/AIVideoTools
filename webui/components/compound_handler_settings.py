@@ -240,12 +240,12 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
         font_path = os.path.relpath(font_path)
         font_path =  "./"+font_path.replace(os.sep, '/')
 
-    recognize_position_model = None|SubtitlePositionCoord
     # auto subtitle recognized and mosaic
-    if subtitle_params['position'] == SubtitlePosition.ORIGIN:
-        subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
-        recognize_poistion = subtitle_position_dict.get("edit_video.mp4")
-        recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
+    recognize_position_model = None|SubtitlePositionCoord
+    subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
+    recognize_poistion = subtitle_position_dict.get("edit_video.mp4")
+    recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
+    if recognize_position_model.is_exist:
         video.video_subtitle_mosaic_auto(video_path=video_path,subtitle_position_coord=recognize_position_model,task_path=task_path)
 
     # base check
