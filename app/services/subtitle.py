@@ -334,7 +334,7 @@ def calculate_font_size(video_height):
     '''
     # 定义基础参数（以常见的1080p横屏视频为基准）
     BASE_HEIGHT = 1080  # 基准分辨率高度
-    BASE_FONT_SIZE = 48  # 在基准分辨率下的字号
+    BASE_FONT_SIZE = 45  # 在基准分辨率下的字号
     
     # 按当前视频高度与基准高度的比例缩放字号
     font_size = int(BASE_FONT_SIZE * (video_height / BASE_HEIGHT))

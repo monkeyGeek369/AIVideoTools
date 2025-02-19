@@ -108,6 +108,7 @@
     "min_subtitle_merge_distance":"Minimum subtitle merge distance (pixel)",
     "subtitle_position":"subtitle position",
     "subtitle_position_tips":"subtitle position show list",
-    "Origin_subtitle_position":"Original subtitle position (auto mosaic)"
+    "Origin_subtitle_position":"Original subtitle position (auto mosaic)",
+    "compound_subtitle_auto":"Auto Recognize Subtitle"
   }
 }
