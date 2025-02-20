@@ -351,13 +351,14 @@ def auto_wrap_text(text, font_path, font_size, max_width):
     
     for word in cleaned_text:
         current_line.append(word)
-        line_width = font.getbbox(" ".join(current_line))[2]  # 测量当前行宽度
+        font_postions = font.getbbox("".join(current_line))
+        line_width = font_postions[2] -  font_postions[0]  # 测量当前行宽度
         if line_width > max_width:
             current_line.pop()
-            lines.append(" ".join(current_line))
+            lines.append("".join(current_line))
             current_line = [word]
     
-    lines.append(" ".join(current_line))
+    lines.append("".join(current_line))
     return "\n".join(lines)
 
 if __name__ == "__main__":
