@@ -252,7 +252,9 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
     subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
     recognize_poistion = subtitle_position_dict.get("edit_video.mp4")
     recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
+    recognize_height = video_height // 2
     if recognize_position_model.is_exist:
+        recognize_height = int(recognize_position_model.left_top_y)
         video.video_subtitle_mosaic_auto(video_path=video_path,subtitle_position_coord=recognize_position_model,task_path=task_path)
 
     # base check
@@ -284,7 +286,7 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
                 # 计算字幕位置
                 position = None
                 if subtitle_params['position'] == SubtitlePosition.ORIGIN and recognize_position_model.is_exist:
-                    position = ('center',  int(recognize_position_model.left_top_y))
+                    position = ('center',  recognize_height)
                 else:
                     position = video.calculate_subtitle_position(
                         subtitle_params['position'],

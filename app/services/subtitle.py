@@ -347,8 +347,9 @@ def auto_wrap_text(text, font_path, font_size, max_width):
     font = ImageFont.truetype(font_path, font_size)
     lines = []
     current_line = []
+    cleaned_text = re.sub(r"\s+", "", text)
     
-    for word in text.split():
+    for word in cleaned_text:
         current_line.append(word)
         line_width = font.getbbox(" ".join(current_line))[2]  # 测量当前行宽度
         if line_width > max_width:
