@@ -34,7 +34,7 @@ def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         tr("bgm_volume"),
         min_value=0.0,
         max_value=1.0,
-        value=0.3,
+        value=0.2,
         step=0.01,
         help=tr("bgm_volume_help"),
     )
