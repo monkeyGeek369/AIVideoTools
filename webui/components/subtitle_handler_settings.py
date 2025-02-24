@@ -142,7 +142,7 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
         with open(output_subtitle_path, 'r', encoding='utf-8') as f:
             subtitle_content = f.read()
             st_container.text_area(
-                "merged.srt",
+                "merged_srt",
                 value=subtitle_content,
                 height=600,
                 label_visibility="collapsed",
