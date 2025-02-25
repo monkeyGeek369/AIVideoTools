@@ -51,7 +51,7 @@ def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                     os.remove(edit_bg_musics_file_path)
                 else:
                     audio = AudioSegment.from_file(bgm_path)
-                    gain_db = 20 * math.log10(bgm_volume)
+                    gain_db = 20 * math.log10(float(bgm_volume))
                     adjusted_audio = audio.apply_gain(gain_db)
                     adjusted_audio.export(edit_bg_musics_file_path, format="mp3")
                     st_container.success(tr("bg_music_create_success"))
