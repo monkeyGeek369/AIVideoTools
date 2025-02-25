@@ -109,6 +109,12 @@
     "subtitle_position":"subtitle position",
     "subtitle_position_tips":"subtitle position show list",
     "Origin_subtitle_position":"Original subtitle position (auto mosaic)",
-    "compound_subtitle_auto":"Auto Recognize Subtitle"
+    "compound_subtitle_auto":"Auto Recognize Subtitle",
+    "llm_handler_success":"llm subtitle processing success",
+    "use_original_subtitle_success":"use original subtitle success",
+    "voice_create_success":"voice create success",
+    "bg_music_create_success":"background music create success",
+    "video_edit_success":"video edit success",
+    "compound_handler_submit_success":"compound processing success"
   }
 }

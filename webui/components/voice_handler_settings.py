@@ -2,7 +2,7 @@ from streamlit.delta_generator import DeltaGenerator
 from app.services import voice,subtitle,audio_merger
 import streamlit as st
 from app.utils import utils,file_utils
-import os
+import os,random
 
 
 def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
@@ -32,7 +32,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         selected_friendly_name = col2.selectbox(
             tr("speech_synthesis"),
             options=list(friendly_names.values()),
-            index=1,
+            index=random.randint(0, len(friendly_names) - 1),
         )
 
         # get voice name
@@ -45,30 +45,26 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
             raise Exception(tr("v2_voice_error"))
 
         # voice params settings
-        voice_volume = col3.slider(
+        voice_volume = col3.text_input(
             tr("speech_volume"),
-            min_value=0.0,
-            max_value=2.0,
             value=1.0,
-            step=0.01,
             help=tr("speech_volume_help")
         )
+
         st.session_state['voice_volume'] = voice_volume
 
-
         # speech rate
-        voice_rate = col4.selectbox(
+        voice_rate = col4.text_input(
             tr("speech_rate"),
-            options=[0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.5, 1.8, 2.0],
-            index=5,
+            value=1.3
         )
+
         st.session_state['voice_rate'] = voice_rate
 
         # speech pitch
-        voice_pitch = col5.selectbox(
+        voice_pitch = col5.text_input(
             tr("speech_pitch"),
-            options=[0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.5, 1.8, 2.0],
-            index=2,
+            value=1.0
         )
         st.session_state['voice_pitch'] = voice_pitch
 
@@ -79,6 +75,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
                 submit_button = bt1_col.button(tr("voice_handler_submit"))
                 if submit_button:
                     voice_processing(tr,container_dict)
+                    st_container.success(tr("voice_create_success"))
 
                 check_button = bt2_col.button(tr("voice_handler_check"))
                 if check_button:

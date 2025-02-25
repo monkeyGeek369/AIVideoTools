@@ -986,12 +986,6 @@ Gender: Male
 
 Name: fr-FR-VivienneMultilingualNeural-V2
 Gender: Female
-
-Name: zh-CN-XiaoxiaoMultilingualNeural-V2
-Gender: Female
-
-Name: zh-CN-YunxiNeural-V2
-Gender: Male
     """.strip()
     voices = []
     name = ""

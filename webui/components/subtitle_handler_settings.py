@@ -63,10 +63,12 @@ def render_subtitle_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                     subtitle_ai_handler(llm_url=llm_url,llm_api_key=llm_api_key,llm_model=llm_model,llm_prompt=llm_prompt,llm_temperature=llm_temperature,
                                         st_container=processed_container,material_subtitles=material_subtitles,tr=tr,material_videos=material_videos,
                                         container_dict=container_dict,is_use_llm=True)
+                    st.success(tr("llm_handler_success"))
             if llm_btn_right.button(label=tr("use_material_subtitles")):
                 subtitle_ai_handler(llm_url=llm_url,llm_api_key=llm_api_key,llm_model=llm_model,llm_prompt=llm_prompt,llm_temperature=llm_temperature,
                                     st_container=processed_container,material_subtitles=material_subtitles,tr=tr,material_videos=material_videos,
                                     container_dict=container_dict,is_use_llm=False)
+                st.success(tr("use_original_subtitle_success"))
         except Exception as e:
             st.error(e)
 

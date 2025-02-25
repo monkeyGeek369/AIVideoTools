@@ -26,13 +26,13 @@ def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
     with col2:
         video_stylize = col2.checkbox(label=tr("video_stylize"),key="video_stylize")
     with col3:
-        video_filter_selected = col3.selectbox(
-            tr("video_filter"),
-            index=0,
-            options=range(len(filter_options)),
-            format_func=lambda x: filter_options[x][0],
-        )
-        video_filter = filter_options[video_filter_selected][1]
+        video_filter_selected = col3.radio(
+            label=tr("video_filter"),
+            options=[item[0] for item in filter_options],
+            index=3,
+            key="video_filter_radio"
+            )
+        video_filter = [item for item in filter_options if item[0] == video_filter_selected][0][1]
 
     # submit
     submit_button = st_container.button(tr("video_handler_submit"))
@@ -40,6 +40,7 @@ def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         with st_container:
             with st.spinner(tr("processing")):
                 render_video_edit(tr,st_container,container_dict,video_mirror,video_stylize,video_filter)
+                st_container.success(tr("video_edit_success"))
 
 
 def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator],video_mirror:bool,video_stylize:bool,video_filter:str):

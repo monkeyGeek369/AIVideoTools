@@ -75,7 +75,7 @@
     "custom_bgm_file_not_mp3":"自定义背景音乐文件必须是mp3格式",
     "video_mirror":"镜像视频",
     "video_stylize":"视频风格化",
-    "video_handler_submit":"视频处理",
+    "video_handler_submit":"视频编辑",
     "material_videos_not_exist":"素材视频不存在",
     "warm_sun_filter":"暖光滤镜",
     "setting_sun_filter":"夕阳滤镜",
@@ -109,6 +109,12 @@
     "subtitle_position":"字幕位置",
     "subtitle_position_tips":"字幕位置展示列表",
     "Origin_subtitle_position":"原始字幕位置(自动对原字幕马赛克)",
-    "compound_subtitle_auto":"自动识别字幕"
+    "compound_subtitle_auto":"自动识别字幕",
+    "llm_handler_success":"llm字幕处理成功",
+    "use_original_subtitle_success":"使用原始字幕成功",
+    "voice_create_success":"语音创建成功",
+    "bg_music_create_success":"背景音乐创建成功",
+    "video_edit_success":"视频编辑成功",
+    "compound_handler_submit_success":"合成处理成功"
   }
 }

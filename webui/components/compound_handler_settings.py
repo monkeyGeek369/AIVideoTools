@@ -37,6 +37,7 @@ def render_compound_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
             with st.spinner(text=tr("processing")):
                 try:
                     compound_video(tr,bg_music_check,voice_check,subtitle_check,container_dict)
+                    submit_container.success(tr("compound_handler_submit_success"))
                 except Exception as e:
                     submit_container.error(e)
                 finally:

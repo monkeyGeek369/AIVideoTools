@@ -30,14 +30,7 @@ def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         custom_bgm_file = st_container.text_input(tr("custom_bgm_file"), value="")
 
     # 背景音乐音量
-    bgm_volume = st_container.slider(
-        tr("bgm_volume"),
-        min_value=0.0,
-        max_value=1.0,
-        value=0.2,
-        step=0.01,
-        help=tr("bgm_volume_help"),
-    )
+    bgm_volume = st_container.text_input(tr("bgm_volume"), value=0.2,help=tr("bgm_volume_help"))
     #st.session_state['bgm_volume'] = bgm_volume
 
     # get save path
@@ -61,6 +54,7 @@ def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                     gain_db = 20 * math.log10(bgm_volume)
                     adjusted_audio = audio.apply_gain(gain_db)
                     adjusted_audio.export(edit_bg_musics_file_path, format="mp3")
+                    st_container.success(tr("bg_music_create_success"))
                     del audio
                     del adjusted_audio
                 # show bg music
