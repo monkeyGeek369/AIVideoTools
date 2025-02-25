@@ -144,10 +144,10 @@ def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
         out_path=out_path,
         subtitle_list=subtitle_texts, 
         voice_name=st.session_state.get('voice_name'),
-        voice_rate=st.session_state.get('voice_rate', 1.0),
-        voice_pitch=st.session_state.get('voice_pitch', 1.0),
+        voice_rate=float(st.session_state.get('voice_rate', 1.0)),
+        voice_pitch=float(st.session_state.get('voice_pitch', 1.0)),
         force_regenerate=True,
-        volume=st.session_state.get('voice_volume', 1.0)
+        volume=float(st.session_state.get('voice_volume', 1.0))
     )
     
     if audio_files is None:
