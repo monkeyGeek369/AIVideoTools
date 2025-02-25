@@ -36,11 +36,11 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     split_container=material_handler_form.container()
     column1,column2,column3,column4 = split_container.columns(4)
     with column1:
-        video_split_checkbox_value = column1.checkbox(label=tr("video_split"),key="video_split")
+        video_split_checkbox_value = column1.checkbox(label=tr("video_split"),key="video_split",value=True)
     with column2:
-        voice_split_checkbox_value = column2.checkbox(label=tr("voice_split"),key="voice_split")
+        voice_split_checkbox_value = column2.checkbox(label=tr("voice_split"),key="voice_split",value=True)
     with column3:
-        subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split")
+        subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split",value=True)
     with column4:
         subtitle_position_recognize_checkbox_value = column4.checkbox(label=tr("subtitle_position_recognize"),key="subtitle_position_recognize",value=True)
         ignore_subtitle_area = column4.text_input(label=tr("ignore_subtitle_area"),key="ignore_subtitle_area",value=500)
