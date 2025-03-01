@@ -1,4 +1,4 @@
-from moviepy.editor import VideoFileClip,TextClip,CompositeVideoClip
+from moviepy.editor import VideoFileClip,TextClip,CompositeVideoClip,AudioFileClip,CompositeAudioClip
 import os,cv2
 import numpy as np
 
@@ -73,6 +73,65 @@ def add_mosaic_to_video():
     video_with_mosaic = video.fl_image(lambda frame: apply_perspective_background_color(frame, 46, 547, 528, 617,2))
     video_with_mosaic.write_videofile("F:\download\\test_mosaic_out.mp4", codec="libx264")
 
+def compress_video():
+   video_clip = VideoFileClip("F:\download\\tmp\\edit_video.mp4")
+   video_duration = video_clip.duration
+   audio_clips = []
+   
+   # add bg music
+   audio_clip = AudioFileClip("F:\download\\tmp\\edit_bg_music.mp3")
+   audio_clip = audio_clip.set_duration(video_duration)
+   audio_clips.append(audio_clip)
+
+   # add voice
+   voice_clip = AudioFileClip("F:\download\\tmp\\edit_audio.mp3")
+   audio_clips.append(voice_clip)
+
+   # save
+   mix_audio_clip = CompositeAudioClip(audio_clips)
+   video_clip = video_clip.set_audio(mix_audio_clip)
+   final_clip = video_clip
+
+   # mp4 比原视频略大0.5m可以接受
+   temp_audio_path = "temp-audio.aac"
+   final_clip.write_videofile(
+      "F:/download/tmp/optimized_video.mp4",
+      codec='libx264',
+      audio_codec='aac',
+      fps=video_clip.fps,
+      preset='slow',
+      threads=os.cpu_count(),
+      ffmpeg_params=[
+         "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
+         "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
+         "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
+         "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
+      ],
+      write_logfile=False, #是否写入日志
+      remove_temp=True,#是否删除临时文件
+      temp_audiofile=temp_audio_path  #指定音频的临时文件路径
+   )
+   
+   # webm格式 与原格式相差无几
+   #temp_audio_path = "temp_audio.ogg"
+   # final_clip.write_videofile(
+   #    "F:/download/tmp/compress_video.webm",
+   #    codec="libvpx-vp9",        # VP9 编码器压缩效率更高
+   #    audio_codec="vorbis",      # 与视频编码器对应的音频编码器
+   #    fps=video_clip.fps,
+   #    preset="slow", #预设模式决定了编码器在编码过程中对速度和压缩效率的权衡（slow编码速度较慢，但压缩效率较高，适合需要高质量输出的场景。）
+   #    threads=os.cpu_count(),   # 线程数，默认为cpu核心数
+   #    ffmpeg_params=[
+   #       "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
+   #       "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
+   #       "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
+   #       "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
+   #    ],
+   #    write_logfile=False, #是否写入日志
+   #    remove_temp=True,#是否删除临时文件
+   #    temp_audiofile=temp_audio_path  #指定音频的临时文件路径
+   # )
+
 if __name__ == '__main__':
    font_path = "F:\\softProject\\AIVideoTools\\resource\\fonts\\STHeitiMedium.ttc"
    relpath = os.path.relpath(font_path)
@@ -86,5 +145,8 @@ if __name__ == '__main__':
    #test_crop()
 
    # test mosaic
-   add_mosaic_to_video()
+   #add_mosaic_to_video()
+
+   # test compress video
+   compress_video()
 

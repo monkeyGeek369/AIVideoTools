@@ -56,7 +56,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         # speech rate
         voice_rate = col4.text_input(
             tr("speech_rate"),
-            value=1.3
+            value=1.0
         )
 
         st.session_state['voice_rate'] = voice_rate
@@ -64,7 +64,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         # speech pitch
         voice_pitch = col5.text_input(
             tr("speech_pitch"),
-            value=1.0
+            value=1.5
         )
         st.session_state['voice_pitch'] = voice_pitch
 

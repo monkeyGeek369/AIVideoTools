@@ -115,17 +115,25 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
         if split_videos:
             utils.create_dir(material_videos_path)
             video = VideoFileClip(origin_video.path)
-            video = video.without_audio()
+            video = video.without_audio()                  
+            temp_audio_path = os.path.join(task_path, "tmp", "material-audio.aac")
             video.write_videofile(
-                filename=os.path.join(material_videos_path,origin_video.name+".mp4"),
-                codec="libx264",
+                os.path.join(material_videos_path,origin_video.name+".mp4"),
+                codec='libx264',
+                audio_codec='aac',
                 fps=video.fps,
-                bitrate="5000k",
-                preset="medium",
-                remove_temp=True,
-                audio=False,
-                threads=8
-                )
+                preset='medium',
+                threads=os.cpu_count(),
+                ffmpeg_params=[
+                    "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
+                    "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
+                    "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
+                    "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
+                ],
+                write_logfile=False, #是否写入日志
+                remove_temp=True,#是否删除临时文件
+                temp_audiofile=temp_audio_path  #指定音频的临时文件路径
+            )
             st.session_state['video_height'] = video.h
             st.session_state['video_width'] = video.w
             video.close()

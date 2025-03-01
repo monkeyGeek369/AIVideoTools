@@ -130,7 +130,7 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
         # merge subtitle time interval
         for i, sub in enumerate(merged_subs):
             if i != 0:
-                sub.start = sub.start + pysrt.SubRipTime(milliseconds=500)
+                sub.start = sub.start + pysrt.SubRipTime(milliseconds=800)
 
         # merge subtitle path
         task_path = st.session_state['task_path']

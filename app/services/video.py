@@ -668,8 +668,25 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
     # reader = create_easyocr_reader()
     try:
         video_with_mosaic = video.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position))
-        #video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect,reader=reader))
-        video_with_mosaic.write_videofile(temp_video_path, codec="libx264", fps=video.fps)
+        #video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect,reader=reader))        
+        temp_audio_path = os.path.join(task_path, "tmp", "mosaic-audio.aac")
+        video_with_mosaic.write_videofile(
+            temp_video_path,
+            codec='libx264',
+            audio_codec='aac',
+            fps=video.fps,
+            preset='medium',
+            threads=os.cpu_count(),
+            ffmpeg_params=[
+                "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
+                "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
+                "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
+                "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
+            ],
+            write_logfile=False, #是否写入日志
+            remove_temp=True,#是否删除临时文件
+            temp_audiofile=temp_audio_path  #指定音频的临时文件路径
+        )
     finally:
         video.close()
         del video
