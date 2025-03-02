@@ -3,7 +3,7 @@ import json
 import subprocess
 import edge_tts
 from edge_tts import submaker
-from pydub import AudioSegment
+from pydub import AudioSegment,effects
 from typing import List, Dict
 from loguru import logger
 from app.utils import utils
@@ -42,19 +42,40 @@ def merge_audio_files(out_path: str, audio_files: list, total_duration: float, s
     # 遍历脚本中的每个片段
     for subtitle_item, audio_file in zip(subtitle_list, audio_files):
         try:
-            # 加载TTS音频文件
-            tts_audio = AudioSegment.from_file(audio_file)
-
             # 获取片段信息
             index, timestamp_str, text = subtitle_item
-
-            # 获取片段的开始和结束时间
             start_time, end_time = timestamp_str.split(' --> ')
-            start_seconds = utils.time_to_seconds(start_time)
-            end_seconds = utils.time_to_seconds(end_time)
+            start_ms = int(utils.time_to_seconds(start_time) * 1000)
+            end_ms = int(utils.time_to_seconds(end_time) * 1000)
+
+            
+            # 计算字幕时间段
+            slot_duration = end_ms - start_ms
+            if slot_duration <= 0:
+                logger.warning(f"无效时间段: {timestamp_str}")
+                continue
+
+
+            # 加载TTS音频文件
+            tts_audio = AudioSegment.from_file(audio_file)
+            
+            # 核心算法：动态调整音频速度（注意：通过此种方法调速后语音会失真）
+            #original_duration = len(tts_audio)
+            # if original_duration > slot_duration:
+            #     # 计算需要的速度比例 (保持音高)
+            #     speed_factor = original_duration / slot_duration
+                
+            #     # 使用pydub的变速功能（需要ffmpeg）
+            #     tts_audio = effects.speedup(
+            #         tts_audio, 
+            #         playback_speed=speed_factor,
+            #         chunk_size=25,
+            #         crossfade=25
+            #     )
+            #     logger.info(f"调整音频速度: {speed_factor:.2f}x")
 
             # 根据OST设置处理音频
-            final_audio = final_audio.overlay(tts_audio, position=start_seconds * 1000)
+            final_audio = final_audio.overlay(tts_audio, position=start_ms)
         except Exception as e:
             logger.error(f"处理音频文件 {audio_file} 时出错: {str(e)}")
             continue

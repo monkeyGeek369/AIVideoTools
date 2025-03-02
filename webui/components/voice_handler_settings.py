@@ -56,7 +56,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         # speech rate
         voice_rate = col4.text_input(
             tr("speech_rate"),
-            value=1.0
+            value=1.5
         )
 
         st.session_state['voice_rate'] = voice_rate
@@ -64,7 +64,7 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         # speech pitch
         voice_pitch = col5.text_input(
             tr("speech_pitch"),
-            value=1.5
+            value=1.0
         )
         st.session_state['voice_pitch'] = voice_pitch
 
@@ -96,10 +96,10 @@ def render_voice_preview(tr, voice_name,st_container:DeltaGenerator):
     sub_maker = voice.tts(
         text=play_content,
         voice_name=voice_name,
-        voice_rate=st.session_state.get('voice_rate', 1.0),
-        voice_pitch=st.session_state.get('voice_pitch', 1.0),
+        voice_rate=float(st.session_state.get('voice_rate', 1.0)),
+        voice_pitch=float(st.session_state.get('voice_pitch', 1.0)),
         voice_file=audio_file,
-        voice_volume=st.session_state.get('voice_volume', 1.0),
+        voice_volume=float(st.session_state.get('voice_volume', 1.0)),
     )
 
     # 如果语音文件生成失败，使用默认内容重试
@@ -108,10 +108,10 @@ def render_voice_preview(tr, voice_name,st_container:DeltaGenerator):
         sub_maker = voice.tts(
             text=play_content,
             voice_name=voice_name,
-            voice_rate=st.session_state.get('voice_rate', 1.0),
-            voice_pitch=st.session_state.get('voice_pitch', 1.0),
+            voice_rate=float(st.session_state.get('voice_rate', 1.0)),
+            voice_pitch=float(st.session_state.get('voice_pitch', 1.0)),
             voice_file=audio_file,
-            voice_volume=st.session_state.get('voice_volume', 1.0),
+            voice_volume=float(st.session_state.get('voice_volume', 1.0)),
         )
 
     if sub_maker and os.path.exists(audio_file):
