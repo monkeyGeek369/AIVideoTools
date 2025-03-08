@@ -669,7 +669,7 @@ def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:Subti
     try:
         video_with_mosaic = video.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position))
         #video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect,reader=reader))        
-        temp_audio_path = os.path.join(task_path, "tmp", "mosaic-audio.aac")
+        temp_audio_path = os.path.join(task_path, "temp", "mosaic-audio.aac")
         video_with_mosaic.write_videofile(
             temp_video_path,
             codec='libx264',

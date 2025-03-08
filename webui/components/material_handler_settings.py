@@ -116,7 +116,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             utils.create_dir(material_videos_path)
             video = VideoFileClip(origin_video.path)
             video = video.without_audio()                  
-            temp_audio_path = os.path.join(task_path, "tmp", "material-audio.aac")
+            temp_audio_path = os.path.join(task_path, "temp", "material-audio.aac")
             video.write_videofile(
                 os.path.join(material_videos_path,origin_video.name+".mp4"),
                 codec='libx264',

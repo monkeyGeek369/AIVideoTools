@@ -103,7 +103,7 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         if subtitle_clips and len(subtitle_clips) > 0:
             final_clip = CompositeVideoClip([video_clip] + subtitle_clips, size=video_clip.size)        
                     
-        temp_audio_path = os.path.join(task_path, "tmp", "compound-audio.aac")
+        temp_audio_path = os.path.join(task_path, "temp", "compound-audio.aac")
         final_clip.write_videofile(
             final_clip_path,
             codec='libx264',

@@ -84,7 +84,7 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
         edit_videos_path = os.path.join(task_path, "edit_videos")
         file_utils.ensure_directory(edit_videos_path)
         final_clip_path = os.path.join(edit_videos_path, "edit_video.mp4")             
-        temp_audio_path = os.path.join(task_path, "tmp", "edit-audio.aac")
+        temp_audio_path = os.path.join(task_path, "temp", "edit-audio.aac")
         final_clip.write_videofile(
             final_clip_path,
             codec='libx264',
