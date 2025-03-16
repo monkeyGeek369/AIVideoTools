@@ -3,10 +3,11 @@ matplotlib.use('Agg')  # 强制使用无头渲染模式
 from moviepy.editor import *
 from moviepy.video.fx.all import rotate
 import numpy as np
-from PIL import Image
+from PIL import Image,ImageDraw
 from scipy.ndimage import gaussian_filter
 import matplotlib.pyplot as plt
 from scipy.fft import fft
+import cv2
 
 # mac
 # video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
@@ -256,69 +257,86 @@ def audio_visualization_effect(video_path, output_path):
 
     with AudioFileClip(video_path) as audio_clip:
         sample_rate = audio_clip.fps
-        # 逐帧读取音频数据，返回的是一个生成器
         raw_audio = audio_clip.coreader().iter_frames()
-        # 将所有音频帧堆叠成一个 NumPy 数组，方便后续处理
         audio_data = np.vstack([frame for frame in raw_audio])
 
     # 处理单声道
-    if audio_data.ndim == 2 and audio_data.shape[1] == 2:
-        # 双通道，通过计算两个通道的平均值将其转换为单声道
-        #audio_data = audio_data.mean(axis=1)
-        # 获取其中一个通道
-        audio_data = audio_data[:, 0]
-    elif audio_data.ndim == 2 and audio_data.shape[1] == 1:
-        # 单通道，直接展平数组
-        audio_data = audio_data.flatten()
+    audio_data = audio_data[:, 0] if audio_data.ndim == 2 else audio_data.flatten()
+    audio_data = audio_data.astype(np.float32)
+    
+    # 归一化音频数据
+    max_val = np.max(np.abs(audio_data))
+    if max_val > 0:
+        audio_data /= max_val
 
-    # 定义帧处理函数
     def add_visualization(get_frame, t):
         frame = get_frame(t)
-        # 确保像素值在 0 到 255 的范围内
         frame = frame.astype(np.uint8)
 
-        # 根据时间戳 t 获取对应的音频样本索引
         sample_index = int(t * sample_rate)
-        # 提取当前时间点前后的 200 个音频样本（100 个在前，100 个在后），用于绘制音频波形
-        audio_segment = audio_data[max(0, sample_index - 100):sample_index + 100]
+        start = max(0, sample_index - 100)
+        end = min(len(audio_data), sample_index + 100)
+        
+        # 获取当前音频片段
+        segment = audio_data[start:end]
+        if len(segment) < 200:
+            segment = np.pad(segment, (0, 200 - len(segment)), 'constant')
 
-        # 计算可视化区域高度
-        vis_height = min(300, frame.shape[0] // 4)
-
-        # 创建 Matplotlib 图形
+        # 创建可视化图形
         plt.figure(figsize=(8, 2), dpi=100, facecolor='black')
         plt.axis('off')
-        # 绘制青色音频波形
-        plt.plot(audio_segment, color='cyan')
-        # 关闭坐标轴
+        plt.axhline(y=0, color='white', linewidth=1, alpha=0.3)  # 基准线
+        
+        # 可视化参数设置
+        num_bars = 20  # 显示的小格子数量
+        bar_width = 0.8
+        colors = plt.cm.viridis(np.linspace(0, 1, num_bars))  # 颜色渐变
+        
+        # 将音频分段处理
+        chunk_size = len(segment) // num_bars
+        for i in range(num_bars):
+            chunk = segment[i*chunk_size : (i+1)*chunk_size]
+            amplitude = np.mean(np.abs(chunk))  # 计算平均振幅
+            
+            # 绘制跳动小格子
+            plt.bar(i, 
+                   height=amplitude * 2,  # 高度放大
+                   bottom=-amplitude,     # 底部位置实现双向跳动
+                   width=bar_width,
+                   color=colors[i],
+                   edgecolor='white',
+                   alpha=0.8)
+        
+        plt.xlim(-1, num_bars)
+        plt.ylim(-1.2, 1.2)
         plt.tight_layout(pad=0)
 
-        # 转换图形为 NumPy 数组
+        # 转换图形
         canvas = plt.gcf().canvas
         canvas.draw()
-        width, height = canvas.get_width_height()
-        image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8).reshape(height, width, 4)[:, :, :3]
+        image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8).reshape(
+            canvas.get_width_height()[::-1] + (4,))[..., :3]
         plt.close()
 
-        # 使用 Pillow 库将音频波形图像调整为与视频帧宽度相同、高度为 vis_height 的大小
+        # 调整可视化高度
+        vis_height = min(200, frame.shape[0] // 4)
         img_pil = Image.fromarray(image_data).resize((frame.shape[1], vis_height))
 
-        # 合成到原视频帧
+        # 合成到视频帧
         blended = frame.copy()
-        # 将音频波形图像合成到视频帧的底部
-        # 通过调整透明度（0.3 和 0.7）实现半透明效果，使音频波形与视频内容融合
-        blended[-vis_height:] = blended[-vis_height:] * 0.3 + np.array(img_pil) * 0.7
+        overlay = np.array(img_pil)
+        blended[-vis_height:] = cv2.addWeighted(
+            blended[-vis_height:].astype(np.float32), 0.7,
+            overlay.astype(np.float32), 0.3, 0
+        )
         return blended.astype(np.uint8)
 
-    # 应用特效
     processed_video = video.fl(add_visualization)
-
-    # 输出视频文件
     processed_video.write_videofile(output_path,
-                                   codec='libx264',
-                                   audio_codec='aac',
-                                   threads=4,
-                                   logger='bar')
+                                  codec='libx264',
+                                  audio_codec='aac',
+                                  threads=4,
+                                  logger='bar')
 
 if __name__ == '__main__':
     # 截取视频
