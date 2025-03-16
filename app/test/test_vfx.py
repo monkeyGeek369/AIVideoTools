@@ -260,11 +260,9 @@ def audio_visualization_effect(video_path, output_path):
         raw_audio = audio_clip.coreader().iter_frames()
         audio_data = np.vstack([frame for frame in raw_audio])
 
-    # 处理单声道
     audio_data = audio_data[:, 0] if audio_data.ndim == 2 else audio_data.flatten()
     audio_data = audio_data.astype(np.float32)
     
-    # 归一化音频数据
     max_val = np.max(np.abs(audio_data))
     if max_val > 0:
         audio_data /= max_val
@@ -277,33 +275,27 @@ def audio_visualization_effect(video_path, output_path):
         start = max(0, sample_index - 100)
         end = min(len(audio_data), sample_index + 100)
         
-        # 获取当前音频片段
         segment = audio_data[start:end]
         if len(segment) < 200:
             segment = np.pad(segment, (0, 200 - len(segment)), 'constant')
 
-        # 创建可视化图形
-        plt.figure(figsize=(8, 2), dpi=100, facecolor=None, edgecolor=None)
+        # 设置透明背景
+        plt.figure(figsize=(8, 2), dpi=100, facecolor='none', edgecolor='none')
         plt.axis('off')
-        plt.axhline(y=0, color='white', linewidth=1, alpha=0.3)  # 基准线
+        plt.axhline(y=0, color='white', linewidth=1, alpha=0.3)
         
-        # 可视化参数设置
-        num_bars = 40              # 主条形数量
-        sub_grids_per_bar = 15      # 每个主条形的子格子数量
-        bar_width = 1            # 主条形宽度
-        sub_height = 0.1           # 子格子高度
-        colors = plt.cm.plasma(np.linspace(0, 1, sub_grids_per_bar))  # 颜色配置
+        num_bars = 40
+        sub_grids_per_bar = 15
+        bar_width = 1
+        sub_height = 0.1
+        colors = plt.cm.plasma(np.linspace(0, 1, sub_grids_per_bar))
         
-        # 将音频分段处理
         chunk_size = len(segment) // num_bars
         for i in range(num_bars):
             main_chunk = segment[i*chunk_size : (i+1)*chunk_size]
             amplitude = np.mean(np.abs(main_chunk))
-            
-            # 计算点亮的子格子数量（带动态增强）
             num_lit = min(int(amplitude * sub_grids_per_bar * 1.2), sub_grids_per_bar)
             
-            # 绘制每个子格子
             for k in range(num_lit):
                 plt.bar(
                     x=i,
@@ -320,24 +312,21 @@ def audio_visualization_effect(video_path, output_path):
         plt.ylim(0, sub_grids_per_bar * sub_height + 0.3)
         plt.tight_layout(pad=0)
 
-        # 转换图形
+        # 保留Alpha通道
         canvas = plt.gcf().canvas
         canvas.draw()
-        image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8).reshape(
-            canvas.get_width_height()[::-1] + (4,))[..., :3]
+        image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8)
+        image_data = image_data.reshape(canvas.get_width_height()[::-1] + (4,))  # 保持RGBA
         plt.close()
 
-        # 调整可视化高度
         vis_height = min(200, frame.shape[0] // 4)
-        img_pil = Image.fromarray(image_data).resize((frame.shape[1], vis_height))
+        img_pil = Image.fromarray(image_data, 'RGBA').resize((frame.shape[1], vis_height))
 
-        # 合成到视频帧
-        blended = frame.copy()
-        overlay = np.array(img_pil)
-        blended[-vis_height:] = cv2.addWeighted(
-            blended[-vis_height:].astype(np.float32), 0.7,
-            overlay.astype(np.float32), 0.3, 0
-        )
+        # 使用Alpha通道合成
+        frame_pil = Image.fromarray(frame).convert('RGBA')
+        frame_pil.paste(img_pil, (0, frame_pil.height - vis_height), img_pil)
+        blended = np.array(frame_pil.convert('RGB'))
+        
         return blended.astype(np.uint8)
 
     processed_video = video.fl(add_visualization)
