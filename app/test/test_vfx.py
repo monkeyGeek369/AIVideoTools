@@ -252,41 +252,45 @@ def video_supersample():
     new_clip.write_videofile(output_path)
 
 def audio_visualization_effect(video_path, output_path):
-    # 加载视频文件
     video = VideoFileClip(video_path)
-    audio = video.audio  # 提取音频轨道
-    # 使用低层级API提取音频数据
+
     with AudioFileClip(video_path) as audio_clip:
+        sample_rate = audio_clip.fps
+        # 逐帧读取音频数据，返回的是一个生成器
         raw_audio = audio_clip.coreader().iter_frames()
-        audio_data = np.vstack([frame for frame in raw_audio])  # 手动堆叠数组
+        # 将所有音频帧堆叠成一个 NumPy 数组，方便后续处理
+        audio_data = np.vstack([frame for frame in raw_audio])
 
     # 处理单声道
     if audio_data.ndim == 2 and audio_data.shape[1] == 2:
-        audio_data = audio_data.mean(axis=1)
+        # 双通道，通过计算两个通道的平均值将其转换为单声道
+        #audio_data = audio_data.mean(axis=1)
+        # 获取其中一个通道
+        audio_data = audio_data[:, 0]
     elif audio_data.ndim == 2 and audio_data.shape[1] == 1:
+        # 单通道，直接展平数组
         audio_data = audio_data.flatten()
-
-    # 获取音频数据
-    # audio_samples = audio.to_soundarray(fps=44100)  # 采样率可以根据需要调整
-    # audio_samples = np.mean(audio_samples, axis=1)  # 将立体声音频转换为单声道
 
     # 定义帧处理函数
     def add_visualization(get_frame, t):
+        frame = get_frame(t)
+        # 确保像素值在 0 到 255 的范围内
+        frame = frame.astype(np.uint8)
 
-        frame = get_frame(t)  # 这里调用 get_frame 方法获取实际帧数据
-        frame = frame.astype(np.uint8)  # 确保帧数据是 uint8 类型
-
-        # 获取当前时间点的音频数据
-        sample_index = int(t * 44100)  # 根据时间戳 t 获取对应的音频样本索引
-        audio_segment = audio_data[max(0, sample_index - 100):sample_index + 100]  # 提取一段音频数据
+        # 根据时间戳 t 获取对应的音频样本索引
+        sample_index = int(t * sample_rate)
+        # 提取当前时间点前后的 200 个音频样本（100 个在前，100 个在后），用于绘制音频波形
+        audio_segment = audio_data[max(0, sample_index - 100):sample_index + 100]
 
         # 计算可视化区域高度
         vis_height = min(300, frame.shape[0] // 4)
 
         # 创建 Matplotlib 图形
-        plt.figure(figsize=(10, 4), dpi=100, facecolor='black')
+        plt.figure(figsize=(8, 2), dpi=100, facecolor='black')
         plt.axis('off')
-        plt.plot(audio_segment, color='cyan')  # 绘制音频波形
+        # 绘制青色音频波形
+        plt.plot(audio_segment, color='cyan')
+        # 关闭坐标轴
         plt.tight_layout(pad=0)
 
         # 转换图形为 NumPy 数组
@@ -296,11 +300,13 @@ def audio_visualization_effect(video_path, output_path):
         image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8).reshape(height, width, 4)[:, :, :3]
         plt.close()
 
-        # 调整可视化层尺寸
+        # 使用 Pillow 库将音频波形图像调整为与视频帧宽度相同、高度为 vis_height 的大小
         img_pil = Image.fromarray(image_data).resize((frame.shape[1], vis_height))
 
         # 合成到原视频帧
         blended = frame.copy()
+        # 将音频波形图像合成到视频帧的底部
+        # 通过调整透明度（0.3 和 0.7）实现半透明效果，使音频波形与视频内容融合
         blended[-vis_height:] = blended[-vis_height:] * 0.3 + np.array(img_pil) * 0.7
         return blended.astype(np.uint8)
 
@@ -351,7 +357,7 @@ if __name__ == '__main__':
     #video_supersample()
 
     # 音频可视化
-    audio_visualization_effect("F:\download\视频资料\open-stage\李雅英 笑容滿面的雅英 融化了大家的心.mp4", output_path)
+    audio_visualization_effect("F:\download\compound_video.mp4", output_path)
 
 
     # 尺寸调整
