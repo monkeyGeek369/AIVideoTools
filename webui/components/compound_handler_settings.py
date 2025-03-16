@@ -103,7 +103,12 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         if subtitle_clips and len(subtitle_clips) > 0:
             final_clip = CompositeVideoClip([video_clip] + subtitle_clips, size=video_clip.size)        
                     
-        temp_audio_path = os.path.join(task_path, "temp", "compound-audio.aac")
+        temp_audio_path = os.path.join(task_path, "temp")
+        if not os.path.exists(temp_audio_path):
+            os.makedirs(temp_audio_path)
+        
+        temp_audio_file = os.path.join(temp_audio_path, "compound-audio.aac")
+
         final_clip.write_videofile(
             final_clip_path,
             codec='libx264',
@@ -119,7 +124,7 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
             ],
             write_logfile=False, #是否写入日志
             remove_temp=True,#是否删除临时文件
-            temp_audiofile=temp_audio_path  #指定音频的临时文件路径
+            temp_audiofile=temp_audio_file  #指定音频的临时文件路径
         )
 
         # show
