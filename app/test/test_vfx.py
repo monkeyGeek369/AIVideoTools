@@ -288,26 +288,38 @@ def audio_visualization_effect(video_path, output_path):
         plt.axhline(y=0, color='white', linewidth=1, alpha=0.3)  # 基准线
         
         # 可视化参数设置
-        num_bars = 20  # 显示的小格子数量
-        bar_width = 0.8
-        colors = plt.cm.viridis(np.linspace(0, 1, num_bars))  # 颜色渐变
+        num_bars = 20  # 主条形数量
+        sub_bars = 3   # 每个主条形拆分为3个子条形
+        total_bars = num_bars * sub_bars
+        bar_width = 0.2  # 子条形宽度
+        colors = plt.cm.viridis(np.linspace(0, 1, total_bars))  # 颜色渐变
         
         # 将音频分段处理
         chunk_size = len(segment) // num_bars
         for i in range(num_bars):
-            chunk = segment[i*chunk_size : (i+1)*chunk_size]
-            amplitude = np.mean(np.abs(chunk))  # 计算平均振幅
-            
-            # 绘制跳动小格子
-            plt.bar(i, 
-                   height=amplitude * 2,  # 高度放大
-                   bottom=-amplitude,     # 底部位置实现双向跳动
-                   width=bar_width,
-                   color=colors[i],
-                   edgecolor='white',
-                   alpha=0.8)
-        
-        plt.xlim(-1, num_bars)
+            main_chunk = segment[i*chunk_size : (i+1)*chunk_size]
+            # 处理子chunk
+            sub_chunk_size = len(main_chunk) // sub_bars
+            for j in range(sub_bars):
+                start_idx = j * sub_chunk_size
+                end_idx = (j+1)*sub_chunk_size if j < sub_bars-1 else len(main_chunk)
+                sub_chunk = main_chunk[start_idx:end_idx]
+                amplitude = np.mean(np.abs(sub_chunk))
+                
+                # 计算子条形位置（在主条形周围均匀分布）
+                x_pos = i + (j - 1) * 0.3  # 调整为-0.3, 0, +0.3
+                color_idx = i * sub_bars + j
+                
+                # 绘制子条形
+                plt.bar(x_pos, 
+                       height=amplitude * 2,
+                       bottom=-amplitude,
+                       width=bar_width,
+                       color=colors[color_idx],
+                       edgecolor='white',
+                       alpha=0.8)
+
+        plt.xlim(-1, num_bars)  # 保持原x轴范围
         plt.ylim(-1.2, 1.2)
         plt.tight_layout(pad=0)
 
