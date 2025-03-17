@@ -393,8 +393,9 @@ def audio_visualization_effect_v2(video_path, output_path):
 
     with AudioFileClip(video_path) as audio_clip:
         sample_rate = audio_clip.fps
-        raw_audio = audio_clip.coreader().iter_frames()
-        audio_data = np.vstack([frame for frame in raw_audio])
+        # raw_audio = audio_clip.coreader().iter_frames()
+        # audio_data = np.vstack([frame for frame in raw_audio])
+        audio_data = audio_clip.to_soundarray()
         audio_data = audio_data[:, 0] if audio_data.ndim == 2 else audio_data.flatten()
         audio_data = audio_data.astype(np.float32)
         max_val = np.max(np.abs(audio_data))
