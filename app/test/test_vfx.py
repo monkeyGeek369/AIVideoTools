@@ -10,14 +10,14 @@ from scipy.fft import fft
 import cv2
 
 # mac
-# video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
-# video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
-# output_path = "/Users/monkeygeek/Downloads/output.mp4"
+video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
+video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
+output_path = "/Users/monkeygeek/Downloads/output.mp4"
 
 # windows
-video1_path = "F:\download\\test-0-6.mp4"
-video2_path = "F:\download\\test-6-12.mp4"
-output_path = "F:\download\\test_out.mp4"
+# video1_path = "F:\download\\test-0-6.mp4"
+# video2_path = "F:\download\\test-6-12.mp4"
+# output_path = "F:\download\\test_out.mp4"
 
 def transfer_origin_video():
     video = VideoFileClip("F:\download\\test.webm")
@@ -257,76 +257,128 @@ def audio_visualization_effect(video_path, output_path):
 
     with AudioFileClip(video_path) as audio_clip:
         sample_rate = audio_clip.fps
+        # get audio data from frames
+        # raw_audio可以理解为一个表格,每一行代表一个采样点，每一列代表一个通道,它只是一个平面数据
         raw_audio = audio_clip.coreader().iter_frames()
+        # audio_data表示将每一帧的数据堆叠到一起,组成一个二维数组
+        # 它是一个多维数组,表示为(n_samples, n).其中n_samples表示这一帧中所具备的采样点个数,n表示每个采样点的通道数
+        # 例如如果是双通道的,那么n=2,每一个采样点就是两个通道的数据,可以通过audio_data[:, 0]或audio_data[:, 1]获得获取单通道的数据
+        # 例如audio_data[:, 0]表示提取二维数组所有行:的第一列0,返回一个新的一维数组,这就是单通道
         audio_data = np.vstack([frame for frame in raw_audio])
 
+    # audio_data.ndim == 2表示为多维数组(不一定只是2通道音频)
+    # audio_data.flatten()将任何维度的数组转为一维数组
     audio_data = audio_data[:, 0] if audio_data.ndim == 2 else audio_data.flatten()
     audio_data = audio_data.astype(np.float32)
     
+    # 归一化
     max_val = np.max(np.abs(audio_data))
     if max_val > 0:
+        # 保证通道中的每个采样数据都在[-1, 1]范围内
         audio_data /= max_val
 
     def add_visualization(get_frame, t):
+        # 帧frame为某一时刻的图像数据,可以表示为一个多维素组(height, width, n),其中height表示图像的高,width表示图像的宽,n表示图像的通道数
+        # RGB通道的每个像素点是一个三元组（R, G, B）此时n=3,可以通过frame[:, :, 0]获取红色通道的数据
+        # RGBA通道的每个像素点是一个四元组（R, G, B, A）此时n=4,可以通过frame[:, :, 0]获取红色通道的数据
+        # 高度和宽度指的是图像在y轴和x轴上的像素个数
         frame = get_frame(t)
+        # 将numpy数组转换为uint8(范围0-255)更方便表示像素颜色取值
         frame = frame.astype(np.uint8)
 
+        # 采样率为每秒采样次数,类似于帧率
+        # 获取当前时刻的采样点
         sample_index = int(t * sample_rate)
         start = max(0, sample_index - 100)
         end = min(len(audio_data), sample_index + 100)
         
+        # 获取当前时刻的音频采样数据
         segment = audio_data[start:end]
         if len(segment) < 200:
+            # 如果音频采样数据不足200个采样点，就填充0补充
+            # (0, 200 - len(segment))表示前面填充0个采样点，后面填充200 - len(segment)个采样点
+            # constant表示使用常数填充
             segment = np.pad(segment, (0, 200 - len(segment)), 'constant')
 
-        # 设置透明背景
+        # 创建绘图大小:宽8英寸,高2英寸,像素密度100的图像.整体的像素大小是宽800像素,高200像素
+        # 背景色为none,边框颜色为none
         plt.figure(figsize=(8, 2), dpi=100, facecolor='none', edgecolor='none')
+        # 不显示坐标轴
         plt.axis('off')
+        # 水平参考线在y=0处,颜色为白色,宽度为1,透明度为0.3
         plt.axhline(y=0, color='white', linewidth=1, alpha=0.3)
         
+        # 条块数量
         num_bars = 40
+        # 每一个条块的格子数量
         sub_grids_per_bar = 15
+        # 条块宽度:数据单位,1表示一个单位
         bar_width = 1
+        # 子格子的高度:数据单位.0.1表示一个单位的10%
         sub_height = 0.1
+        # plt.cm.plasma这是渐变颜色,表示从橙色到红色
+        # np.linspace(0, 1, sub_grids_per_bar)表示从0到1之间生成sub_grids_per_bar个数
+        # 作用是做颜色映射
         colors = plt.cm.plasma(np.linspace(0, 1, sub_grids_per_bar))
         
+        # 取整:表示每一个条块占用多少采样
         chunk_size = len(segment) // num_bars
         for i in range(num_bars):
+            # 获取当前条块的采样数据
             main_chunk = segment[i*chunk_size : (i+1)*chunk_size]
+            # 取绝对值的平均值范围[0-1],因为数据在前面已经归一化
             amplitude = np.mean(np.abs(main_chunk))
+            # 计算振幅格子数,放大0.2倍,增加视觉效果
             num_lit = min(int(amplitude * sub_grids_per_bar * 1.2), sub_grids_per_bar)
             
             for k in range(num_lit):
                 plt.bar(
-                    x=i,
-                    height=sub_height,
-                    width=bar_width,
-                    bottom=k * sub_height,
-                    color=colors[k],
-                    edgecolor='white',
-                    linewidth=0.5,
-                    alpha=0.9
+                    x=i,# x轴坐标
+                    height=sub_height,# 每个格子的高度
+                    width=bar_width, # 每个格子的宽度
+                    bottom=k * sub_height,# 每个格子的底部位置
+                    color=colors[k],# 每个格子的颜色
+                    edgecolor='white',# 每个格子的边框颜色
+                    linewidth=0.5,# 每个格子的边框宽度
+                    alpha=0.9 # 每个格子的透明度
                 )
 
+        # 表示x轴的范围,与上文的单位相关
         plt.xlim(-1, num_bars)
+        # 表示y轴的范围
         plt.ylim(0, sub_grids_per_bar * sub_height + 0.3)
+        # 调整布局，子图与边界之间没有间距
         plt.tight_layout(pad=0)
 
-        # 保留Alpha通道
+        # 获取画布
         canvas = plt.gcf().canvas
+        # 将图形绘制到画布上
         canvas.draw()
+        # 获取画布数据,格式为RGBA,数据类型为uint8
         image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8)
-        image_data = image_data.reshape(canvas.get_width_height()[::-1] + (4,))  # 保持RGBA
+        # canvas.get_width_height()：获取画布的宽度和高度（以像素为单位）。返回值是一个元组 (width, height)。
+        # [::-1]：将宽度和高度的顺序反转，因为 NumPy 数组的形状是以 (height, width) 的形式表示的。
+        # + (4,)：表示每个像素有 4 个通道（RGBA），因此数组的形状为 (height, width, 4)。
+        # reshape(...)：将一维的像素数据重新排列为三维数组，形状为 (height, width, 4)，表示 RGBA 格式的图像数据。
+        image_data = image_data.reshape(canvas.get_width_height()[::-1] + (4,))
         plt.close()
 
+        # frame.shape表示帧的格式,例如(height, width, channels),因此frame.shape[0]表示帧的高度
         vis_height = min(200, frame.shape[0] // 4)
+        # 按照指定宽、高生成图像
         img_pil = Image.fromarray(image_data, 'RGBA').resize((frame.shape[1], vis_height))
 
-        # 使用Alpha通道合成
+        # 将帧转换为RGBA格式
         frame_pil = Image.fromarray(frame).convert('RGBA')
+
+        # im：要粘贴的图像。
+        # box：粘贴的位置和大小，是一个元组 (x, y) 或 (x, y, w, h)。
+        # mask：可选参数，用于指定蒙版。如果提供，蒙版图像的 Alpha 通道将用于控制粘贴的透明度。
         frame_pil.paste(img_pil, (0, frame_pil.height - vis_height), img_pil)
+
+        # 将帧转换为RGB格式
         blended = np.array(frame_pil.convert('RGB'))
-        
+        # 返回混合后的帧
         return blended.astype(np.uint8)
 
     processed_video = video.fl(add_visualization)
@@ -373,7 +425,7 @@ if __name__ == '__main__':
     #video_supersample()
 
     # 音频可视化
-    audio_visualization_effect("F:\download\compound_video.mp4", output_path)
+    audio_visualization_effect(video1_path, output_path)
 
 
     # 尺寸调整
