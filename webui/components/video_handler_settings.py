@@ -2,14 +2,15 @@ from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
 import os
 from moviepy.editor import VideoFileClip, concatenate_videoclips,vfx
-from app.utils import file_utils,utils
+from app.utils import file_utils
 from moviepy.video.fx.painting import painting
 import numpy as np
+from app.services import audio
 
 
 def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
     # get cols
-    col1,col2,col3 = st_container.columns(3)
+    col1,col2,col3,col4 = st_container.columns(4)
     
     filter_options = [
         (tr("none_filter"), ""),
@@ -21,6 +22,7 @@ def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
     video_mirror = None
     video_stylize = None
     video_filter = None
+    video_audio_vfx = None
     with col1:
         video_mirror = col1.checkbox(label=tr("video_mirror"),key="video_mirror")
     with col2:
@@ -33,17 +35,19 @@ def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
             key="video_filter_radio"
             )
         video_filter = [item for item in filter_options if item[0] == video_filter_selected][0][1]
+    with col4:
+        video_audio_vfx = col4.checkbox(label=tr("video_audio_vfx"),key="video_audio_vfx")
 
     # submit
     submit_button = st_container.button(tr("video_handler_submit"))
     if submit_button:
         with st_container:
             with st.spinner(tr("processing")):
-                render_video_edit(tr,st_container,container_dict,video_mirror,video_stylize,video_filter)
+                render_video_edit(tr,st_container,container_dict,video_mirror,video_stylize,video_filter,video_audio_vfx)
                 st_container.success(tr("video_edit_success"))
 
 
-def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator],video_mirror:bool,video_stylize:bool,video_filter:str):
+def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator],video_mirror:bool,video_stylize:bool,video_filter:str,video_audio_vfx:bool):
     
     video_list = []
     task_path = st.session_state['task_path']
@@ -79,6 +83,10 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
         # filter
         if video_filter and len(video_filter) > 0:
             final_clip = video_filter_handler(final_clip,video_filter)
+
+        # audio vfx
+        if video_audio_vfx:
+            final_clip = audio.audio_visualization_effect(final_clip)
 
         # save
         edit_videos_path = os.path.join(task_path, "edit_videos")
