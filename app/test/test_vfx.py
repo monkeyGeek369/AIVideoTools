@@ -8,16 +8,18 @@ from scipy.ndimage import gaussian_filter
 import matplotlib.pyplot as plt
 from scipy.fft import fft
 import cv2
+from pydub import AudioSegment
 
 # mac
-video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
-video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
-output_path = "/Users/monkeygeek/Downloads/output.mp4"
+# video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
+# video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
+# output_path = "/Users/monkeygeek/Downloads/output.mp4"
 
 # windows
-# video1_path = "F:\download\\test-0-6.mp4"
-# video2_path = "F:\download\\test-6-12.mp4"
-# output_path = "F:\download\\test_out.mp4"
+video0_path = "F:\download\\test.webm"
+video1_path = "F:\download\\test-0-6.mp4"
+video2_path = "F:\download\\test-6-12.mp4"
+output_path = "F:\download\\test_out.mp4"
 
 def transfer_origin_video():
     video = VideoFileClip("F:\download\\test.webm")
@@ -391,17 +393,17 @@ def audio_visualization_effect(video_path, output_path):
 def audio_visualization_effect_v2(video_path, output_path):
     video = VideoFileClip(video_path)
 
-    with AudioFileClip(video_path) as audio_clip:
-        sample_rate = audio_clip.fps
-        # raw_audio = audio_clip.coreader().iter_frames()
-        # audio_data = np.vstack([frame for frame in raw_audio])
-        audio_data = audio_clip.to_soundarray()
-        audio_data = audio_data[:, 0] if audio_data.ndim == 2 else audio_data.flatten()
-        audio_data = audio_data.astype(np.float32)
-        max_val = np.max(np.abs(audio_data))
-        if max_val > 0:
-            audio_data /= max_val
-    
+    audio = AudioSegment.from_file(video_path)
+    sample_rate = audio.frame_rate
+    samples = audio.get_array_of_samples()
+    audio_data = np.array(samples)
+    audio_data = audio_data[:, 0] if audio_data.ndim == 2 else audio_data.flatten()
+    audio_data = audio_data.astype(np.float32)
+
+    max_val = np.max(np.abs(audio_data))
+    if max_val > 0:
+        audio_data /= max_val
+
     num_bars = 40
     sub_grids_per_bar = 15
     bar_width = 1
@@ -497,8 +499,8 @@ if __name__ == '__main__':
     #video_supersample()
 
     # 音频可视化
-    audio_visualization_effect(video1_path, output_path)
-    #audio_visualization_effect_v2(video1_path, output_path)
+    #audio_visualization_effect(video1_path, output_path)
+    audio_visualization_effect_v2(video0_path, output_path)
 
     # 尺寸调整
     # 色彩反转
