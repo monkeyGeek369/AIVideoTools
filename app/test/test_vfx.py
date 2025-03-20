@@ -9,6 +9,11 @@ import matplotlib.pyplot as plt
 from scipy.fft import fft
 import cv2
 from pydub import AudioSegment
+from concurrent.futures import ThreadPoolExecutor,as_completed
+from multiprocessing import Pool
+
+
+processed_frames = None
 
 # mac
 # video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
@@ -390,8 +395,87 @@ def audio_visualization_effect(video_path, output_path):
                                   threads=4,
                                   logger='bar')
 
+class VideoProcessor:
+    def __init__(self, sample_rate, audio_data,num_bars,sub_grids_per_bar,sub_height,bar_width,colors,vis_height,fps):
+        self.sample_rate = sample_rate
+        self.audio_data = audio_data
+        self.num_bars = num_bars
+        self.sub_grids_per_bar = sub_grids_per_bar
+        self.sub_height=sub_height
+        self.bar_width = bar_width
+        self.colors = colors
+        self.vis_height= vis_height
+        self.fps = fps
+
+    def add_visualization(self,frame, t):
+        plt.figure(figsize=(8, 2), dpi=100, facecolor='none', edgecolor='none')
+        #frame = get_frame(t).astype(np.uint8)
+        sample_index = int(t * self.sample_rate)
+        start = max(0, sample_index - 100)
+        end = min(len(self.audio_data), sample_index + 100)
+        segment = self.audio_data[start:end]
+        if len(segment) < 200:
+            segment = np.pad(segment, (0, 200 - len(segment)), 'constant')
+
+        chunk_size = len(segment) // self.num_bars
+        for i in range(self.num_bars):
+            main_chunk = segment[i*chunk_size : (i+1)*chunk_size]
+            amplitude = np.mean(np.abs(main_chunk))
+            num_lit = min(int(amplitude * self.sub_grids_per_bar * 1.2), self.sub_grids_per_bar)
+            
+            for k in range(num_lit):
+                plt.bar(
+                    x=i,
+                    height=self.sub_height,
+                    width=self.bar_width, 
+                    bottom=k * self.sub_height,
+                    color=self.colors[k],
+                    edgecolor='white',
+                    linewidth=0.5,
+                    alpha=0.9
+                )
+        plt.axis('off')
+        plt.axhline(y=0, color='white', linewidth=1, alpha=0.3)
+        plt.xlim(-1, self.num_bars)
+        plt.ylim(0, self.sub_grids_per_bar * self.sub_height + 0.3)
+        plt.tight_layout(pad=0)
+        canvas = plt.gcf().canvas
+        canvas.draw()
+        image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8)
+        image_data = image_data.reshape(canvas.get_width_height()[::-1] + (4,))
+        plt.close()
+
+        img_pil = Image.fromarray(image_data, 'RGBA').resize((frame.shape[1], self.vis_height))
+        frame_pil = Image.fromarray(frame).convert('RGBA')
+        frame_pil.paste(img_pil, (0, frame_pil.height - self.vis_height), img_pil)
+        blended = np.array(frame_pil.convert('RGB'))
+        return blended.astype(np.uint8)
+
+    def process_frame(self, t, frame):
+        return t,self.add_visualization(frame, t)
+    
+    def get_frame(self,get_frame, t):
+        global processed_frames
+        frame = processed_frames.get(t)[1]
+        if frame is None:
+            frame = get_frame(t).astype(np.uint8)
+        return frame
+
+    def process_video(self, video):
+        global processed_frames
+        processed_frames = {}
+        with Pool(processes=os.cpu_count()) as pool:
+            frames_with_indices = [(t/self.fps, frame) for t, frame in enumerate(video.iter_frames())]
+            results = pool.starmap(self.process_frame, frames_with_indices)
+
+            # 将结果存储到 processed_frames 中
+            for num, result in enumerate(results):
+                processed_frames[result[0]] = result
+
+
 def audio_visualization_effect_v2(video_path, output_path):
     video = VideoFileClip(video_path)
+    fps = video.fps
 
     audio = AudioSegment.from_file(video_path)
     sample_rate = audio.frame_rate
@@ -411,51 +495,10 @@ def audio_visualization_effect_v2(video_path, output_path):
     colors = plt.cm.plasma(np.linspace(0, 1, sub_grids_per_bar))
     vis_height = min(200, video.size[1] // 4)
 
-    plt.figure(figsize=(8, 2), dpi=100, facecolor='none', edgecolor='none')    
-    def add_visualization(get_frame, t):
-        frame = get_frame(t).astype(np.uint8)
-        sample_index = int(t * sample_rate)
-        start = max(0, sample_index - 100)
-        end = min(len(audio_data), sample_index + 100)
-        segment = audio_data[start:end]
-        if len(segment) < 200:
-            segment = np.pad(segment, (0, 200 - len(segment)), 'constant')
-
-        chunk_size = len(segment) // num_bars
-        for i in range(num_bars):
-            main_chunk = segment[i*chunk_size : (i+1)*chunk_size]
-            amplitude = np.mean(np.abs(main_chunk))
-            num_lit = min(int(amplitude * sub_grids_per_bar * 1.2), sub_grids_per_bar)
-            
-            for k in range(num_lit):
-                plt.bar(
-                    x=i,
-                    height=sub_height,
-                    width=bar_width, 
-                    bottom=k * sub_height,
-                    color=colors[k],
-                    edgecolor='white',
-                    linewidth=0.5,
-                    alpha=0.9
-                )
-        plt.axis('off')
-        plt.axhline(y=0, color='white', linewidth=1, alpha=0.3)
-        plt.xlim(-1, num_bars)
-        plt.ylim(0, sub_grids_per_bar * sub_height + 0.3)
-        plt.tight_layout(pad=0)
-        canvas = plt.gcf().canvas
-        canvas.draw()
-        image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8)
-        image_data = image_data.reshape(canvas.get_width_height()[::-1] + (4,))
-        plt.gca().clear()
-
-        img_pil = Image.fromarray(image_data, 'RGBA').resize((frame.shape[1], vis_height))
-        frame_pil = Image.fromarray(frame).convert('RGBA')
-        frame_pil.paste(img_pil, (0, frame_pil.height - vis_height), img_pil)
-        blended = np.array(frame_pil.convert('RGB'))
-        return blended.astype(np.uint8)
-
-    processed_video = video.fl(add_visualization)
+    processor = VideoProcessor(sample_rate, audio_data,num_bars,sub_grids_per_bar,sub_height,bar_width,colors,vis_height,fps)
+    processor.process_video(video)
+    
+    processed_video = video.fl(processor.get_frame)
     processed_video.write_videofile(output_path,
                                   codec='libx264',
                                   audio_codec='aac',
