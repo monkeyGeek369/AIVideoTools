@@ -406,10 +406,20 @@ class VideoProcessor:
         self.colors = colors
         self.vis_height= vis_height
         self.fps = fps
+        self.fig, self.ax = plt.subplots(figsize=(8, 2), dpi=100, facecolor='none', edgecolor='none')
 
     def add_visualization(self,frame, t):
-        plt.figure(figsize=(8, 2), dpi=100, facecolor='none', edgecolor='none')
-        #frame = get_frame(t).astype(np.uint8)
+        self.ax.clear()
+        
+        self.fig.patch.set_facecolor('none')
+        self.fig.patch.set_edgecolor('none')
+        self.ax.patch.set_facecolor('none')
+        self.ax.axis('off')
+        self.ax.axhline(y=0, color='white', linewidth=1, alpha=0.3)
+        self.ax.set_xlim(-1, self.num_bars)
+        self.ax.set_ylim(0, self.sub_grids_per_bar * self.sub_height + 0.3)
+        self.fig.tight_layout(pad=0)
+
         sample_index = int(t * self.sample_rate)
         start = max(0, sample_index - 100)
         end = min(len(self.audio_data), sample_index + 100)
@@ -424,7 +434,7 @@ class VideoProcessor:
             num_lit = min(int(amplitude * self.sub_grids_per_bar * 1.2), self.sub_grids_per_bar)
             
             for k in range(num_lit):
-                plt.bar(
+                self.ax.bar(
                     x=i,
                     height=self.sub_height,
                     width=self.bar_width, 
@@ -434,16 +444,11 @@ class VideoProcessor:
                     linewidth=0.5,
                     alpha=0.9
                 )
-        plt.axis('off')
-        plt.axhline(y=0, color='white', linewidth=1, alpha=0.3)
-        plt.xlim(-1, self.num_bars)
-        plt.ylim(0, self.sub_grids_per_bar * self.sub_height + 0.3)
-        plt.tight_layout(pad=0)
-        canvas = plt.gcf().canvas
+
+        canvas = self.fig.canvas
         canvas.draw()
         image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8)
         image_data = image_data.reshape(canvas.get_width_height()[::-1] + (4,))
-        plt.close()
 
         img_pil = Image.fromarray(image_data, 'RGBA').resize((frame.shape[1], self.vis_height))
         frame_pil = Image.fromarray(frame).convert('RGBA')
