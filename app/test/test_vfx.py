@@ -430,7 +430,8 @@ class VideoProcessor:
         end = min(len(self.audio_data), sample_index + 100)
         segment = self.audio_data[start:end]
         if len(segment) < 200:
-            segment = np.pad(segment, (0, 200 - len(segment)), 'constant')
+            start = max(0, sample_index - 200)
+            segment = self.audio_data[start:end]
 
         chunk_size = len(segment) // self.num_bars
         for i in range(self.num_bars):
