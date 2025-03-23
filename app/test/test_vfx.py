@@ -19,7 +19,7 @@ from multiprocessing import Pool,shared_memory
 # output_path = "/Users/monkeygeek/Downloads/output.mp4"
 
 # windows
-video0_path = "F:\download\\小姐姐惊讶发现生命奇迹，一只小鸡从蛋壳中顽强求生.webm"
+video0_path = "F:\download\\test.webm"
 video1_path = "F:\download\\test-0-6.mp4"
 video2_path = "F:\download\\test-6-12.mp4"
 output_path = "F:\download\\test_out.mp4"
@@ -416,8 +416,6 @@ class VideoProcessor:
         
     def add_visualization(self, frame, t):
         self.ax.clear()
-    
-        # 设置透明背景
         self.fig.patch.set_facecolor('none')
         self.fig.patch.set_edgecolor('none')
         self.ax.patch.set_facecolor('none')
@@ -457,25 +455,22 @@ class VideoProcessor:
         image_data = np.frombuffer(canvas.buffer_rgba(), dtype=np.uint8)
         image_data = image_data.reshape(canvas.get_width_height()[::-1] + (4,))
 
-        # 确保图像宽度与原视频一致
         vis_height = self.vis_height
-        vis_width = frame.shape[1]  # 原视频的宽度
+        vis_width = frame.shape[1]
         if not hasattr(self, 'vis_image'):
             self.vis_image = np.zeros((vis_height, vis_width, 4), dtype=np.uint8)
-        self.vis_image[:, :, :] = 0  # 清空之前的可视化图像
+        self.vis_image[:, :, :] = 0
 
-        # 如果生成的图像宽度小于原视频宽度，进行缩放
         if image_data.shape[1] < vis_width:
             image_data = cv2.resize(image_data, (vis_width, image_data.shape[0]), interpolation=cv2.INTER_LINEAR)
 
         self.vis_image[:image_data.shape[0], :vis_width, :] = image_data[:vis_height, :vis_width, :]
 
-        # 将可视化图像合成到原始帧上，确保透明背景
         if not hasattr(self, 'blended_frame'):
             self.blended_frame = np.zeros_like(frame)
         self.blended_frame[:, :, :] = frame
-        alpha_channel = self.vis_image[:, :, 3] / 255.0  # 获取透明度通道
-        for c in range(3):  # 对 RGB 通道进行合成
+        alpha_channel = self.vis_image[:, :, 3] / 255.0
+        for c in range(3):
             self.blended_frame[-vis_height:, :, c] = (1 - alpha_channel) * self.blended_frame[-vis_height:, :, c] + alpha_channel * self.vis_image[:vis_height, :, c]
 
         return self.blended_frame.astype(np.uint8)
