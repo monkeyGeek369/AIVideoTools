@@ -501,7 +501,11 @@ def audio_visualization_effect_v2(video_path, output_path):
     shared_audio_data[:] = audio_data[:]  # 将数据复制到共享内存
 
     # muti process
-    processed_frames = {}
+    first_frame = next(video.iter_frames())
+    height, width, channels = first_frame.shape
+    frame_shape = (height, width, channels)
+    num_frames = int(video.duration * fps)
+    processed_frames = np.zeros((num_frames, *frame_shape), dtype=np.uint8)
     with Pool(processes=os.cpu_count()) as pool:
         video_processor = VideoProcessor(sample_rate, num_bars, sub_grids_per_bar, sub_height, bar_width, colors, vis_height, fps,
                                      shm.name, audio_data.shape, audio_data.dtype)
@@ -509,11 +513,12 @@ def audio_visualization_effect_v2(video_path, output_path):
 
         # 将结果存储到 processed_frames 中
         for num, result in enumerate(results):
-            processed_frames[result[0]] = result
+            processed_frames[int(result[0] * fps)] = result[1]
     
     # video process
     def get_frame(get_frame, t):
-        frame = processed_frames.get(t)[1]
+        frame_idx = int(t * fps)
+        frame = processed_frames[frame_idx]
         if frame is None:
             frame = get_frame(t).astype(np.uint8)
         return frame
