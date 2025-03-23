@@ -464,7 +464,14 @@ class VideoProcessor:
 
     def process_frame(self, t, frame):
         return t,self.add_visualization(frame, t)
-    
+
+def process_frame_wrapper(args):
+    t, frame, video_processor = args
+    return video_processor.process_frame(t, frame)
+
+def frame_generator(video, fps, video_processor):
+    for t, frame in enumerate(video.iter_frames()):
+        yield (t / fps, frame, video_processor)
 
 def audio_visualization_effect_v2(video_path, output_path):
     video = VideoFileClip(video_path)
@@ -496,16 +503,14 @@ def audio_visualization_effect_v2(video_path, output_path):
     # muti process
     processed_frames = {}
     with Pool(processes=os.cpu_count()) as pool:
-        video_processor = VideoProcessor(sample_rate,num_bars,sub_grids_per_bar,sub_height,bar_width,colors,vis_height,fps,
-                                         shm.name, audio_data.shape, audio_data.dtype)
-        frames_with_indices = [(t/fps, frame) for t, frame in enumerate(video.iter_frames())]
-        results = pool.starmap(video_processor.process_frame, frames_with_indices)
+        video_processor = VideoProcessor(sample_rate, num_bars, sub_grids_per_bar, sub_height, bar_width, colors, vis_height, fps,
+                                     shm.name, audio_data.shape, audio_data.dtype)
+        results = pool.imap(process_frame_wrapper, frame_generator(video, fps, video_processor))
 
         # 将结果存储到 processed_frames 中
         for num, result in enumerate(results):
             processed_frames[result[0]] = result
     
-
     # video process
     def get_frame(get_frame, t):
         frame = processed_frames.get(t)[1]
