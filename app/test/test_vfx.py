@@ -10,10 +10,8 @@ from scipy.fft import fft
 import cv2
 from pydub import AudioSegment
 from concurrent.futures import ThreadPoolExecutor,as_completed
-from multiprocessing import Pool
+from multiprocessing import Pool,shared_memory
 
-
-processed_frames = None
 
 # mac
 # video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
@@ -396,9 +394,8 @@ def audio_visualization_effect(video_path, output_path):
                                   logger='bar')
 
 class VideoProcessor:
-    def __init__(self, sample_rate, audio_data,num_bars,sub_grids_per_bar,sub_height,bar_width,colors,vis_height,fps):
+    def __init__(self, sample_rate,num_bars,sub_grids_per_bar,sub_height,bar_width,colors,vis_height,fps,shm_name, shape, dtype):
         self.sample_rate = sample_rate
-        self.audio_data = audio_data
         self.num_bars = num_bars
         self.sub_grids_per_bar = sub_grids_per_bar
         self.sub_height=sub_height
@@ -407,6 +404,15 @@ class VideoProcessor:
         self.vis_height= vis_height
         self.fps = fps
         self.fig, self.ax = plt.subplots(figsize=(8, 2), dpi=100, facecolor='none', edgecolor='none')
+
+        # 连接共享内存
+        self.shm = shared_memory.SharedMemory(name=shm_name)
+        self.audio_data = np.ndarray(shape, dtype=dtype, buffer=self.shm.buf)
+
+    def __del__(self):
+        self.fig.clf()
+        plt.close(self.fig)
+        self.shm.close()
 
     def add_visualization(self,frame, t):
         self.ax.clear()
@@ -459,24 +465,6 @@ class VideoProcessor:
     def process_frame(self, t, frame):
         return t,self.add_visualization(frame, t)
     
-    def get_frame(self,get_frame, t):
-        global processed_frames
-        frame = processed_frames.get(t)[1]
-        if frame is None:
-            frame = get_frame(t).astype(np.uint8)
-        return frame
-
-    def process_video(self, video):
-        global processed_frames
-        processed_frames = {}
-        with Pool(processes=os.cpu_count()) as pool:
-            frames_with_indices = [(t/self.fps, frame) for t, frame in enumerate(video.iter_frames())]
-            results = pool.starmap(self.process_frame, frames_with_indices)
-
-            # 将结果存储到 processed_frames 中
-            for num, result in enumerate(results):
-                processed_frames[result[0]] = result
-
 
 def audio_visualization_effect_v2(video_path, output_path):
     video = VideoFileClip(video_path)
@@ -500,10 +488,31 @@ def audio_visualization_effect_v2(video_path, output_path):
     colors = plt.cm.plasma(np.linspace(0, 1, sub_grids_per_bar))
     vis_height = min(200, video.size[1] // 4)
 
-    processor = VideoProcessor(sample_rate, audio_data,num_bars,sub_grids_per_bar,sub_height,bar_width,colors,vis_height,fps)
-    processor.process_video(video)
+    # 创建共享内存
+    shm = shared_memory.SharedMemory(create=True, size=audio_data.nbytes)
+    shared_audio_data = np.ndarray(audio_data.shape, dtype=audio_data.dtype, buffer=shm.buf)
+    shared_audio_data[:] = audio_data[:]  # 将数据复制到共享内存
+
+    # muti process
+    processed_frames = {}
+    with Pool(processes=os.cpu_count()) as pool:
+        video_processor = VideoProcessor(sample_rate,num_bars,sub_grids_per_bar,sub_height,bar_width,colors,vis_height,fps,
+                                         shm.name, audio_data.shape, audio_data.dtype)
+        frames_with_indices = [(t/fps, frame) for t, frame in enumerate(video.iter_frames())]
+        results = pool.starmap(video_processor.process_frame, frames_with_indices)
+
+        # 将结果存储到 processed_frames 中
+        for num, result in enumerate(results):
+            processed_frames[result[0]] = result
     
-    processed_video = video.fl(processor.get_frame)
+
+    # video process
+    def get_frame(get_frame, t):
+        frame = processed_frames.get(t)[1]
+        if frame is None:
+            frame = get_frame(t).astype(np.uint8)
+        return frame
+    processed_video = video.fl(get_frame)
     processed_video.write_videofile(output_path,
                                   codec='libx264',
                                   audio_codec='aac',
