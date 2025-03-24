@@ -429,9 +429,13 @@ class VideoProcessor:
         sample_index = int(t * self.sample_rate)
         start = max(0, sample_index - 100)
         end = min(len(self.audio_data), sample_index + 100)
-        segment = self.audio_data[start:end]
+        if end == len(self.audio_data) and start >= end:
+            segment = self.audio_data[end - 200:end]
+        else:
+            segment = self.audio_data[start:end]
         if len(segment) < 200:
-            start = max(0, sample_index - 200)
+            end = len(self.audio_data)
+            start = max(0, end - 200)
             segment = self.audio_data[start:end]
 
         chunk_size = len(segment) // self.num_bars
