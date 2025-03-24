@@ -14,15 +14,16 @@ from multiprocessing import Pool,shared_memory
 
 
 # mac
-# video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
-# video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
-# output_path = "/Users/monkeygeek/Downloads/output.mp4"
+video0_path = "/Users/monkeygeek/Downloads/baobei.mp4"
+video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
+video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
+output_path = "/Users/monkeygeek/Downloads/output.mp4"
 
 # windows
-video0_path = "F:\download\\test.webm"
-video1_path = "F:\download\\test-0-6.mp4"
-video2_path = "F:\download\\test-6-12.mp4"
-output_path = "F:\download\\test_out.mp4"
+# video0_path = "F:\download\\test.webm"
+# video1_path = "F:\download\\test-0-6.mp4"
+# video2_path = "F:\download\\test-6-12.mp4"
+# output_path = "F:\download\\test_out.mp4"
 
 def transfer_origin_video():
     video = VideoFileClip("F:\download\\test.webm")
