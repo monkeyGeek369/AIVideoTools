@@ -5,12 +5,6 @@ from app.utils import utils
 from streamlit.delta_generator import DeltaGenerator
 from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings,compound_settings
 
-
-# clean all tasks
-if len(config.ui) <= 0:
-    utils.cleanup_tasks()
-    config.ui['webui_started'] = True
-
 def init_log():
     """初始化日志配置"""
     from loguru import logger
@@ -61,6 +55,7 @@ def init_global_state():
     """初始化全局状态"""
     if 'ui_language' not in st.session_state:
         st.session_state['ui_language'] = utils.get_system_locale()
+        utils.cleanup_tasks()
     if 'video_height' not in st.session_state:
         st.session_state['video_height'] = 0
     if 'video_width' not in st.session_state:

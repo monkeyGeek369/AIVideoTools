@@ -56,6 +56,14 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
     final_clip = None
 
     try:
+        # path init
+        edit_videos_path = os.path.join(task_path, "edit_videos")
+        file_utils.ensure_directory(edit_videos_path)
+        final_clip_path = os.path.join(edit_videos_path, "edit_video.mp4")             
+        temp_audio_path = os.path.join(task_path, "temp", "edit-audio.aac")
+        frame_path = os.path.join(task_path, "frame")
+        file_utils.ensure_directory(frame_path)
+
         # get all materials videos
         material_videos_path = os.path.join(task_path, "material_videos")
         if not os.path.exists(material_videos_path):
@@ -89,10 +97,6 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
             final_clip = audio.audio_visualization_effect(final_clip)
 
         # save
-        edit_videos_path = os.path.join(task_path, "edit_videos")
-        file_utils.ensure_directory(edit_videos_path)
-        final_clip_path = os.path.join(edit_videos_path, "edit_video.mp4")             
-        temp_audio_path = os.path.join(task_path, "temp", "edit-audio.aac")
         final_clip.write_videofile(
             final_clip_path,
             codec='libx264',
