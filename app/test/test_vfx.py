@@ -528,7 +528,7 @@ def audio_visualization_effect_v2(video_path, output_path):
     with Pool(processes=os.cpu_count()) as pool:
         video_processor = VideoProcessor(sample_rate, num_bars, sub_grids_per_bar, sub_height, bar_width, colors, vis_height, fps,
                                      shm.name, audio_data.shape, audio_data.dtype)
-        results = pool.imap(process_frame_wrapper, frame_generator(video, fps, video_processor))
+        results = pool.imap_unordered(process_frame_wrapper, frame_generator(video, fps, video_processor),chunksize=10)
 
         # 将结果存储到 processed_frames 中
         for num, result in enumerate(results):
