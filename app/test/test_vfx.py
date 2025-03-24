@@ -15,16 +15,16 @@ import gc
 
 
 # mac
-video0_path = "/Users/monkeygeek/Downloads/baobei.mp4"
-video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
-video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
-output_path = "/Users/monkeygeek/Downloads/output.mp4"
+# video0_path = "/Users/monkeygeek/Downloads/baobei.mp4"
+# video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
+# video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
+# output_path = "/Users/monkeygeek/Downloads/output.mp4"
 
 # windows
-# video0_path = "F:\download\\test.webm"
-# video1_path = "F:\download\\test-0-6.mp4"
-# video2_path = "F:\download\\test-6-12.mp4"
-# output_path = "F:\download\\test_out.mp4"
+video0_path = "F:\download\\test.webm"
+video1_path = "F:\download\\test-0-6.mp4"
+video2_path = "F:\download\\test-6-12.mp4"
+output_path = "F:\download\\test_out.mp4"
 
 def transfer_origin_video():
     video = VideoFileClip("F:\download\\test.webm")
@@ -486,12 +486,10 @@ class VideoProcessor:
         return t,self.add_visualization(frame, t)
 
 def process_frame_wrapper(args):
-    t, frame, video_processor = args
+    t, frame, video_processor,frame_file_path,index = args
     result = video_processor.process_frame(t, frame)
-    del frame
-    del video_processor
-    gc.collect()
-    return result
+    file_path = os.path.join(frame_file_path, f"{index}.npy")
+    np.save(file_path, result[1])
 
 def audio_visualization_effect_v2(video_path, output_path):
     video = VideoFileClip(video_path)
@@ -523,27 +521,22 @@ def audio_visualization_effect_v2(video_path, output_path):
 
     video_processor = VideoProcessor(sample_rate, num_bars, sub_grids_per_bar, sub_height, bar_width, colors, vis_height, fps,
                                     shm.name, audio_data.shape, audio_data.dtype)
+    frame_file_path="F:\download\\tmp"
     def frame_iterator():
         for t, frame in enumerate(video.iter_frames()):
-            yield (t / fps, frame, video_processor)
+            yield (t / fps, frame, video_processor,frame_file_path,t)
 
     # muti process
-    first_frame = next(video.iter_frames())
-    height, width, channels = first_frame.shape
-    frame_shape = (height, width, channels)
-    num_frames = int(video.duration * fps)
-    processed_frames = np.zeros((num_frames, *frame_shape), dtype=np.uint8)
     with Pool(processes=os.cpu_count()) as pool:
-        results = pool.imap_unordered(process_frame_wrapper, frame_iterator(),chunksize=1)
+        results = pool.imap_unordered(process_frame_wrapper, frame_iterator(), chunksize=1)
+        pool.close()
+        pool.join()
 
-        # 将结果存储到 processed_frames 中
-        for num, result in enumerate(results):
-            processed_frames[int(result[0] * fps)] = result[1]
-    
+    gc.collect()
     # video process
     def get_frame(get_frame, t):
         frame_idx = int(t * fps)
-        frame = processed_frames[frame_idx]
+        frame = np.load(os.path.join(frame_file_path, f"{frame_idx}.npy"))
         if frame is None:
             frame = get_frame(t).astype(np.uint8)
         return frame
