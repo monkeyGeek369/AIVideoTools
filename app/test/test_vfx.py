@@ -11,6 +11,7 @@ import cv2
 from pydub import AudioSegment
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from multiprocessing import Pool,shared_memory
+import gc
 
 
 # mac
@@ -486,11 +487,11 @@ class VideoProcessor:
 
 def process_frame_wrapper(args):
     t, frame, video_processor = args
-    return video_processor.process_frame(t, frame)
-
-def frame_generator(video, fps, video_processor):
-    for t, frame in enumerate(video.iter_frames()):
-        yield (t / fps, frame, video_processor)
+    result = video_processor.process_frame(t, frame)
+    del frame
+    del video_processor
+    gc.collect()
+    return result
 
 def audio_visualization_effect_v2(video_path, output_path):
     video = VideoFileClip(video_path)
@@ -519,6 +520,13 @@ def audio_visualization_effect_v2(video_path, output_path):
     shared_audio_data = np.ndarray(audio_data.shape, dtype=audio_data.dtype, buffer=shm.buf)
     shared_audio_data[:] = audio_data[:]  # 将数据复制到共享内存
 
+
+    video_processor = VideoProcessor(sample_rate, num_bars, sub_grids_per_bar, sub_height, bar_width, colors, vis_height, fps,
+                                    shm.name, audio_data.shape, audio_data.dtype)
+    def frame_iterator():
+        for t, frame in enumerate(video.iter_frames()):
+            yield (t / fps, frame, video_processor)
+
     # muti process
     first_frame = next(video.iter_frames())
     height, width, channels = first_frame.shape
@@ -526,9 +534,7 @@ def audio_visualization_effect_v2(video_path, output_path):
     num_frames = int(video.duration * fps)
     processed_frames = np.zeros((num_frames, *frame_shape), dtype=np.uint8)
     with Pool(processes=os.cpu_count()) as pool:
-        video_processor = VideoProcessor(sample_rate, num_bars, sub_grids_per_bar, sub_height, bar_width, colors, vis_height, fps,
-                                     shm.name, audio_data.shape, audio_data.dtype)
-        results = pool.imap_unordered(process_frame_wrapper, frame_generator(video, fps, video_processor),chunksize=10)
+        results = pool.imap_unordered(process_frame_wrapper, frame_iterator(),chunksize=10)
 
         # 将结果存储到 processed_frames 中
         for num, result in enumerate(results):
