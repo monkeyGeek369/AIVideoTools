@@ -534,7 +534,7 @@ def audio_visualization_effect_v2(video_path, output_path):
     num_frames = int(video.duration * fps)
     processed_frames = np.zeros((num_frames, *frame_shape), dtype=np.uint8)
     with Pool(processes=os.cpu_count()) as pool:
-        results = pool.imap_unordered(process_frame_wrapper, frame_iterator(),chunksize=10)
+        results = pool.imap_unordered(process_frame_wrapper, frame_iterator(),chunksize=1)
 
         # 将结果存储到 processed_frames 中
         for num, result in enumerate(results):
