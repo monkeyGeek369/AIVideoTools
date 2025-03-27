@@ -73,6 +73,10 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
                 audio_clip = audio_clip.set_duration(video_duration).loop(duration=video_duration)
             elif audio_clip.duration > video_duration:
                 audio_clip = audio_clip.set_duration(video_duration)
+            if video_duration > 10:
+                audio_clip = audio_clip.audio_fadeout(duration=3)
+            else:
+                audio_clip = audio_clip.audio_fadeout(duration=1)
             audio_clips.append(audio_clip)
         
         # voice
