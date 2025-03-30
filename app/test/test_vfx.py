@@ -11,7 +11,7 @@ import cv2
 from pydub import AudioSegment
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from multiprocessing import Pool,shared_memory
-import gc
+import gc,random
 
 
 # mac
@@ -25,6 +25,7 @@ video0_path = "F:\download\\test.webm"
 video1_path = "F:\download\\test-0-6.mp4"
 video2_path = "F:\download\\test-6-12.mp4"
 output_path = "F:\download\\test_out.mp4"
+image_frame_path = "F:\download\image_frames"
 
 def transfer_origin_video():
     video = VideoFileClip("F:\download\\test.webm")
@@ -547,6 +548,33 @@ def audio_visualization_effect_v2(video_path, output_path):
                                   threads=4,
                                   logger='bar')
 
+def generate_video_by_images(image_folder,output_path, fps=24, duration=10,last_frame_duration=3, effect_duration=0.5):
+    image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) 
+                  if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+    
+    if not image_files:
+        raise ValueError("No image files found in the folder.")
+    
+    base_frames = int(fps * duration)
+    selected_images = []
+    while len(selected_images) < base_frames:
+        random.shuffle(image_files)
+        selected_images.extend(image_files)
+    selected_images = selected_images[:base_frames]
+    
+    clips = []
+    for i, img_path in enumerate(selected_images):
+        img_clip = ImageClip(img_path).set_duration(1/fps)
+        clips.append(img_clip)
+    
+    if last_frame_duration > 0 and selected_images:
+        last_image = selected_images[-1]
+        last_clip = ImageClip(last_image).set_duration(last_frame_duration)
+        clips.append(last_clip)
+    
+    final_clip = concatenate_videoclips(clips, method="compose")
+    final_clip.write_videofile(output_path, fps=fps, codec='libx264', audio_codec='aac')
+
 if __name__ == '__main__':
     # 截取视频
     #transfer_origin_video()
@@ -585,7 +613,10 @@ if __name__ == '__main__':
 
     # 音频可视化
     #audio_visualization_effect(video1_path, output_path)
-    audio_visualization_effect_v2(video0_path, output_path)
+    #audio_visualization_effect_v2(video0_path, output_path)
+
+    # 图片生成视频
+    generate_video_by_images(image_frame_path,output_path,24,5,3,0.75)
 
     # 尺寸调整
     # 色彩反转
