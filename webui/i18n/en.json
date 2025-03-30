@@ -116,6 +116,7 @@
     "bg_music_create_success":"background music create success",
     "video_edit_success":"video edit success",
     "compound_handler_submit_success":"compound processing success",
-    "video_audio_vfx":"video audio vfx"
+    "video_audio_vfx":"video audio vfx",
+    "end_bless":"video end bless"
   }
 }

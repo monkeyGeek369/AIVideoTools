@@ -10,15 +10,16 @@ from app.models.schema import SubtitlePosition
 from app.models.subtitle_position_coord import SubtitlePositionCoord
 
 
-
 def render_compound_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
-    col1,col2,col3 = st_container.columns(3)
+    col1,col2,col_end_bless,col3 = st_container.columns(4)
 
     bg_music_check,voice_check,subtitle_check = None,None,None
     with col1:
         bg_music_check = col1.checkbox(label=tr("compound_bg_music"),key="compound_bg_music",value=True)
     with col2:
         voice_check = col2.checkbox(label=tr("compound_voice"),key="compound_voice",value=True)
+    with col_end_bless:
+        end_bless_check = col_end_bless.checkbox(label=tr("end_bless"),key="end_bless",value=True)
     with col3:
         subtitle_check = col3.checkbox(label=tr("compound_subtitle"),key="compound_subtitle",value=True)
         st.session_state['subtitle_enabled'] = subtitle_check
@@ -36,7 +37,7 @@ def render_compound_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         with submit_container:
             with st.spinner(text=tr("processing")):
                 try:
-                    compound_video(tr,bg_music_check,voice_check,subtitle_check,container_dict)
+                    compound_video(tr,bg_music_check,voice_check,subtitle_check,container_dict,end_bless_check)
                     submit_container.success(tr("compound_handler_submit_success"))
                 except Exception as e:
                     submit_container.error(e)
@@ -44,7 +45,7 @@ def render_compound_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                     torch.cuda.empty_cache()
                     gc.collect()
     
-def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,container_dict:dict[str,DeltaGenerator]):
+def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,container_dict:dict[str,DeltaGenerator],end_bless_check:bool):
     try:
         task_path = st.session_state['task_path']
         mix_audio_clip = None
@@ -59,7 +60,6 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         video_clip = VideoFileClip(edit_video_path)
         video_duration = video_clip.duration
         video_height = video_clip.h
-        video_clip.close()
         audio_clips = []
         
         # bg music
@@ -86,6 +86,11 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
                 raise Exception(tr("edit_voice_not_found"))
             voice_clip = AudioFileClip(edit_voice_path)
             audio_clips.append(voice_clip)
+
+        # end_bless
+        if end_bless_check:
+            end_image_path = utils.end_images_dir()
+            video_clip = video.generate_video_by_images(video_clip,end_image_path,video_clip.fps,3,2)
         
         # subtitle
         subtitle_clips = []
@@ -101,7 +106,6 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
 
         # save
         mix_audio_clip = CompositeAudioClip(audio_clips)
-        video_clip = VideoFileClip(edit_video_path)
         video_clip = video_clip.set_audio(mix_audio_clip)
         final_clip = video_clip
         if subtitle_clips and len(subtitle_clips) > 0:

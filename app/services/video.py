@@ -15,7 +15,7 @@ from moviepy.editor import (
     CompositeAudioClip
 )
 import numpy as np
-import os,easyocr,shutil
+import os,easyocr,shutil,random
 from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
@@ -739,3 +739,32 @@ def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[
                                                                     extend_factor = 2)
 
     return frame_copy
+
+def generate_video_by_images(video_clip:VideoFileClip,image_folder, fps=24, duration=10,last_frame_duration=3):
+    image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) 
+                  if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
+    
+    if not image_files:
+        raise ValueError("No image files found in the folder.")
+    
+    base_frames = int(fps * duration)
+    selected_images = []
+    while len(selected_images) < base_frames:
+        random.shuffle(image_files)
+        selected_images.extend(image_files)
+    selected_images = selected_images[:base_frames]
+    
+    clips = []
+    for i, img_path in enumerate(selected_images):
+        img_clip = ImageClip(img_path).set_duration(1/fps)
+        clips.append(img_clip)
+    
+    if last_frame_duration > 0 and selected_images:
+        last_image = selected_images[-1]
+        last_clip = ImageClip(last_image).set_duration(last_frame_duration)
+        clips.append(last_clip)
+    
+    image_clip = concatenate_videoclips(clips, method="compose")
+    image_clip = image_clip.resize(video_clip.size)
+    final_clip = concatenate_videoclips([video_clip, image_clip])
+    return final_clip

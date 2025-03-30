@@ -112,6 +112,13 @@ def song_dir(sub_dir: str = ""):
         os.makedirs(d)
     return d
 
+def end_images_dir(sub_dir: str = ""):
+    d = resource_dir("end_images")
+    if sub_dir:
+        d = os.path.join(d, sub_dir)
+    if not os.path.exists(d):
+        os.makedirs(d)
+    return d
 
 def get_bgm_file(bgm_type: str = "random", bgm_file: str = ""):
     """

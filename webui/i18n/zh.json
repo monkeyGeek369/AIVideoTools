@@ -116,6 +116,7 @@
     "bg_music_create_success":"背景音乐创建成功",
     "video_edit_success":"视频编辑成功",
     "compound_handler_submit_success":"合成处理成功",
-    "video_audio_vfx":"视频音频特效"
+    "video_audio_vfx":"视频音频特效",
+    "end_bless":"视频结束祝福"
   }
 }
