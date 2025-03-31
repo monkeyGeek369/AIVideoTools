@@ -5,12 +5,12 @@ from moviepy.editor import VideoFileClip, concatenate_videoclips,vfx
 from app.utils import file_utils
 from moviepy.video.fx.painting import painting
 import numpy as np
-from app.services import audio
+from app.services import audio,localhost_llm
 
 
 def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
     # get cols
-    col1,col2,col3,col4 = st_container.columns(4)
+    col1,col2,col3,col4,col5 = st_container.columns(5)
     
     filter_options = [
         (tr("none_filter"), ""),
@@ -23,6 +23,7 @@ def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
     video_stylize = None
     video_filter = None
     video_audio_vfx = None
+    video_title = None
     with col1:
         video_mirror = col1.checkbox(label=tr("video_mirror"),key="video_mirror")
     with col2:
@@ -37,17 +38,19 @@ def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
         video_filter = [item for item in filter_options if item[0] == video_filter_selected][0][1]
     with col4:
         video_audio_vfx = col4.checkbox(label=tr("video_audio_vfx"),key="video_audio_vfx")
+    with col5:
+        video_title = col5.checkbox(label=tr("video_title_polish"),key="video_title_polish",value=True)
 
     # submit
     submit_button = st_container.button(tr("video_handler_submit"))
     if submit_button:
         with st_container:
             with st.spinner(tr("processing")):
-                render_video_edit(tr,st_container,container_dict,video_mirror,video_stylize,video_filter,video_audio_vfx)
+                render_video_edit(tr,st_container,container_dict,video_mirror,video_stylize,video_filter,video_audio_vfx,video_title)
                 st_container.success(tr("video_edit_success"))
 
 
-def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator],video_mirror:bool,video_stylize:bool,video_filter:str,video_audio_vfx:bool):
+def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator],video_mirror:bool,video_stylize:bool,video_filter:str,video_audio_vfx:bool,video_title:bool):
     
     video_list = []
     task_path = st.session_state['task_path']
@@ -56,6 +59,10 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
     final_clip = None
 
     try:
+        # video title polish
+        if video_title:
+            video_title_polish()
+
         # path init
         edit_videos_path = os.path.join(task_path, "edit_videos")
         file_utils.ensure_directory(edit_videos_path)
@@ -157,3 +164,25 @@ def sea_blue_filter(frame):
     frame_copy[:, :, 1] = np.clip(frame_copy[:, :, 1] * 1.03, 0, 255) # 绿色
     frame_copy[:, :, 2] = np.clip(frame_copy[:, :, 2] * 1.21, 0, 255) # 蓝色
     return frame_copy
+
+def video_title_polish():
+    # get llm params
+    llm_url = st.session_state['llm_url']
+    llm_api_key = st.session_state['llm_api_key']
+    llm_model = st.session_state['llm_model']
+    llm_temperature = st.session_state['llm_temperature']
+    llm_result = localhost_llm.chat_single_content(base_url=llm_url,
+                                                api_key=llm_api_key,
+                                                model=llm_model,
+                                                prompt='''
+你现在是一名视频标题润色专家,需要对给到的视频标题进行润色.有如下要求:
+1、润色后的标题含义与原标题含义相同但文字表达不同.
+2、润色后的标题字数不能超过原视频字数的1.5倍.
+3、润色后的标题一定要朗读通顺、无错别字.
+4、直接输出标题,不需要额外字符包裹.
+''',
+                                                content=st.session_state['first_video_name'],
+                                                temperature=llm_temperature)
+    if llm_result:
+        st.session_state['video_polish_name'] = llm_result
+

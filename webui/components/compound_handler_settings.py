@@ -102,7 +102,12 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         # get save path
         compound_videos_path = os.path.join(task_path, "compound_videos")
         file_utils.ensure_directory(compound_videos_path)
-        final_clip_path = os.path.join(compound_videos_path, "compound_video.mp4")
+        video_polish_name  = st.session_state['video_polish_name']
+        if video_polish_name is None or len(video_polish_name) == 0:
+            video_polish_name = "compound_video"
+        if len(video_polish_name) > 100:
+            video_polish_name = "compound_video"
+        final_clip_path = os.path.join(compound_videos_path, video_polish_name + ".mp4")
 
         # save
         mix_audio_clip = CompositeAudioClip(audio_clips)
@@ -143,7 +148,7 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
             video_bytes = video_file.read()
         container_dict["compound_video_expander"].download_button(label=tr("download_compound_video"),
                                                                   data=video_bytes, 
-                                                                  file_name="compound_video.mp4",
+                                                                  file_name=video_polish_name+".mp4",
                                                                   mime="video/mp4",
                                                                   key=f"download_button_"+str(time.time()))
     except Exception as e:

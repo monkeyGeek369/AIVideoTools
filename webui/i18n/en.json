@@ -117,6 +117,7 @@
     "video_edit_success":"video edit success",
     "compound_handler_submit_success":"compound processing success",
     "video_audio_vfx":"video audio vfx",
-    "end_bless":"video end bless"
+    "end_bless":"video end bless",
+    "video_title_polish":"video title polish"
   }
 }

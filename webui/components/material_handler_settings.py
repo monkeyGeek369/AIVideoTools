@@ -90,6 +90,7 @@ def save_uploaded_origin_videos(videos:list[UploadedFile]):
     file_utils.cleanup_temp_files(temp_dir=origin_videos)
 
     # save videos
+    st.session_state['first_video_name'] = videos[0].name.split(".")[0]
     for video in videos:
         file_utils.save_uploaded_file(uploaded_file=video,save_dir=origin_videos,allowed_types=['.mp4','.webm'])
 
