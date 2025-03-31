@@ -180,6 +180,7 @@ def video_title_polish():
 2、润色后的标题字数不能超过原视频字数的1.5倍.
 3、润色后的标题一定要朗读通顺、无错别字.
 4、直接输出标题,不需要额外字符包裹.
+5、整体字数绝对不能超过100字.
 ''',
                                                 content=st.session_state['first_video_name'],
                                                 temperature=llm_temperature)
