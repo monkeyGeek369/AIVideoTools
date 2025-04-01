@@ -31,6 +31,7 @@ resource/fonts/*.ttc
 resource/fonts/*.ttf
 resource/fonts/*.otf
 resource/srt/*.srt
+resource/ocr_model/*
 app/models/faster-whisper-large-v2/*
 app/models/bert/*
 app/models/easyocr/*.pth
