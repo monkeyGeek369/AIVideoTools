@@ -3,19 +3,24 @@ import os,time
 from PIL import Image, ImageDraw, ImageFont
 from paddleocr import PaddleOCR
 import paddle
+import atexit
+from multiprocessing import Pool, cpu_count
 
 video_path = "/Users/monkeygeek/Downloads/test.webm"
 tmp_path = "/Users/monkeygeek/Downloads/tmp"
 font_file_path = "/Users/monkeygeek/Documents/softProject/AIVideoTools/resource/fonts/STHeitiMedium.ttc"
 
-def test_video_subtitle_position_recognize(video_path:str,tmp_path:str,font_file_path:str):
-    clip = VideoFileClip(video_path)
-    # https://paddlepaddle.github.io/PaddleOCR/latest/model/index.html
 
-    start_time = time.time()
-    use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.get_device() == "gpu:0"
+# 全局变量用于保持进程内资源
+process_data = {}
 
-    ocr = PaddleOCR(
+def init_process(video_path, font_file_path, use_gpu):
+    """进程初始化函数，整个进程生命周期只执行一次"""
+    # 初始化视频对象
+    process_data['clip'] = VideoFileClip(video_path)
+    
+    # 初始化OCR模型
+    process_data['ocr'] = PaddleOCR(
                     use_angle_cls=False, # 关闭方向检测,提升速度
                     det_model_dir="./resource/ocr_model/ch_PP-OCRv4_det_train",#区域检测
                     #rec_model_dir="./resource/ocr_model/ch_PP-OCRv4_rec_train",#方向识别
@@ -25,36 +30,70 @@ def test_video_subtitle_position_recognize(video_path:str,tmp_path:str,font_file
                     use_gpu=use_gpu, # GPU开关
                     lang="ch" # 识别中文
                     )
+    
+    # 注册退出清理函数
+    atexit.register(lambda: process_data['clip'].close())
 
-    for t, frame in clip.iter_frames(with_times=True):
+def process_frame(args):
+    """处理单个帧"""
+    t, tmp_path = args
+    try:
+        # 从进程全局数据获取资源
+        clip = process_data['clip']
+        ocr = process_data['ocr']
+        
+        # 获取帧并保存
         frame = clip.get_frame(t)
         frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.png")
-        img = Image.fromarray(frame)
-        img.save(frame_path)
+        Image.fromarray(frame).save(frame_path)
         
-        # 识别图片中的文字
-        result = ocr.ocr(frame_path,det=True, rec=False, cls=False)
-        if result is None or len(result) == 0 or result[0] is None:
-            continue
+        # OCR检测
+        result = ocr.ocr(frame_path, det=True, rec=False, cls=False)
+        if not result or not result[0]:
+            return
 
-        # 遍历识别结果
+        # 绘制检测框
+        image = Image.open(frame_path)
+        draw = ImageDraw.Draw(image)
         for item in result[0]:
             top_left = tuple(map(int, item[0]))
             bottom_right = tuple(map(int, item[2]))
-            if top_left[0] >= bottom_right[0] or top_left[1] >= bottom_right[1]:
-                continue
+            
+            if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
+                draw.rectangle([top_left, bottom_right], outline="red", width=6)
+        
+        image.save(frame_path)
+    except Exception as e:
+        print(f"处理帧 {t} 时发生错误: {str(e)}")
 
-            # 标记图片
-            image = Image.open(frame_path)
-            draw = ImageDraw.Draw(image)
-            draw.rectangle([top_left,bottom_right], outline="red", width=6)
-            image.save(frame_path)
+def generate_tasks(video_path, tmp_path):
+    """生成器函数，按需产生任务"""
+    with VideoFileClip(video_path) as clip:
+        for t, _ in clip.iter_frames(with_times=True):
+            yield (t, tmp_path)
 
-    end_time = time.time()
-    execution_time = end_time - start_time
-    print(f"代码执行时间：{execution_time:.6f} 秒")
-    # 关闭视频文件
-    clip.close()
+def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_file_path: str):
+    """优化后的多进程版本"""
+    start_time = time.time()
+    # https://paddlepaddle.github.io/PaddleOCR/latest/model/index.html
+    
+    # GPU配置
+    use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.get_device() == "gpu:0"
+    
+    # 创建进程池
+    with Pool(
+        processes=cpu_count(),
+        initializer=init_process,
+        initargs=(video_path, font_file_path, use_gpu)
+    ) as pool:
+        # 使用生成器按需产生任务
+        task_generator = generate_tasks(video_path, tmp_path)
+        
+        # 使用imap实现流式处理
+        for _ in pool.imap(process_frame, task_generator, chunksize=5):
+            pass
+    
+    print(f"总执行时间：{time.time() - start_time:.6f} 秒")
 
 
 if __name__ == '__main__':
