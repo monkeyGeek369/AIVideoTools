@@ -6,10 +6,15 @@ import paddle
 import atexit
 from multiprocessing import Pool, cpu_count
 
-video_path = "/Users/monkeygeek/Downloads/test.webm"
-tmp_path = "/Users/monkeygeek/Downloads/tmp"
-font_file_path = "/Users/monkeygeek/Documents/softProject/AIVideoTools/resource/fonts/STHeitiMedium.ttc"
+# mac
+# video_path = "/Users/monkeygeek/Downloads/test.webm"
+# tmp_path = "/Users/monkeygeek/Downloads/tmp"
+# font_file_path = "/Users/monkeygeek/Documents/softProject/AIVideoTools/resource/fonts/STHeitiMedium.ttc"
 
+# windows
+video_path = "F:\download\\test.webm"
+tmp_path = "F:\download\\tmp"
+font_file_path = "F:\download\STHeitiMedium.ttc"
 
 # 全局变量用于保持进程内资源
 process_data = {}
