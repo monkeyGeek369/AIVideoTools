@@ -27,7 +27,7 @@ font_file_path = "F:\download\STHeitiMedium.ttc"
 # 全局变量用于保持进程内资源
 process_data = {}
 
-def init_process(font_file_path, use_gpu):
+def init_process(font_file_path, use_gpu,max_batch_size):
     """进程初始化函数，整个进程生命周期只执行一次"""
 
     # 初始化OCR模型
@@ -41,7 +41,7 @@ def init_process(font_file_path, use_gpu):
                     layout=False,  # 关闭布局分析（不需要结构）
                     table=False,   # 关闭表格识别（不需要表格）
                     use_gpu=use_gpu, # GPU开关
-                    max_batch_size=100, # 最大批次（将多个图像合并成一个批次，此参数设定了批次的最大容量）
+                    max_batch_size=max_batch_size, # 最大批次（将多个图像合并成一个批次，此参数设定了批次的最大容量）
                     lang="ch" # 识别中文
                     )
     
@@ -94,8 +94,13 @@ def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_
     # GPU配置
     use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.get_device() == "gpu:0"
     
+    # 在 init_process 中动态设置
+    sample_frame = next(generate_tasks(video_path, tmp_path))  # 获取第一帧示例
+    frame_size = Image.open(sample_frame).size
+    max_batch_size = max(1, min(100, 4000 // (frame_size[0] * frame_size[1] // 1000)))  # 经验公式
+
     # 主进程初始化OCR模型
-    init_process(font_file_path, use_gpu)
+    init_process(font_file_path, use_gpu,max_batch_size)
 
     # 创建线程池（共享OCR模型）
     with ThreadPool(processes=cpu_count()) as pool:
