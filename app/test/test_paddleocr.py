@@ -39,12 +39,20 @@ def init_process(video_path, font_file_path, use_gpu):
                     #cls_model_dir="./resource/ocr_model/ch_ppocr_mobile_v2.0_cls_train",#文本分类
                     rec=False,
                     cls=False,
+                    layout=False,  # 关闭布局分析（不需要结构）
+                    table=False,   # 关闭表格识别（不需要表格）
                     use_gpu=use_gpu, # GPU开关
+                    max_batch_size=100, # 最大批次
                     lang="ch" # 识别中文
                     )
     
     # 注册退出清理函数
-    atexit.register(lambda: process_data['clip'].close())
+    def cleanup():
+        if 'clip' in process_data:
+            process_data['clip'].close()
+        if 'ocr' in process_data:
+            del process_data['ocr']  # 显式释放OCR模型
+    atexit.register(cleanup)
 
 def process_frame(args):
     """处理单个帧"""
@@ -75,6 +83,7 @@ def process_frame(args):
                 draw.rectangle([top_left, bottom_right], outline="red", width=6)
         
         image.save(frame_path)
+        image.close()
     except Exception as e:
         print(f"处理帧 {t} 时发生错误: {str(e)}")
 
@@ -94,7 +103,7 @@ def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_
     
     # 创建进程池
     with Pool(
-        processes=cpu_count(),
+        processes=1,
         initializer=init_process,
         initargs=(video_path, font_file_path, use_gpu)
     ) as pool:
