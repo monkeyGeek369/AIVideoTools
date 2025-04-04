@@ -103,7 +103,7 @@ def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_
     
     # 创建进程池
     with Pool(
-        processes=1,
+        processes=cpu_count(),
         initializer=init_process,
         initargs=(video_path, font_file_path, use_gpu)
     ) as pool:
