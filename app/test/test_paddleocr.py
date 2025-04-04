@@ -40,6 +40,7 @@ def init_process(font_file_path, use_gpu,max_batch_size):
                     cls=False,
                     layout=False,  # 关闭布局分析（不需要结构）
                     table=False,   # 关闭表格识别（不需要表格）
+                    precision='int8',  # 显式指定精度
                     use_gpu=use_gpu, # GPU开关
                     max_batch_size=max_batch_size, # 最大批次（将多个图像合并成一个批次，此参数设定了批次的最大容量）
                     lang="ch" # 识别中文
