@@ -1,8 +1,15 @@
 from moviepy.editor import VideoFileClip
 import os,time
+# import torch
+# print(torch.__version__)
+# print(torch.cuda.is_available())  # 检查 CUDA 是否可用
+# print(torch.backends.cudnn.is_available())  # 检查 cuDNN 是否可用
+# print(torch.backends.cudnn.version())  # 检查 cuDNN 是否可用
+# print(torch.backends.cudnn.enabled)  # 检查 cuDNN 是否被启用
 from PIL import Image, ImageDraw, ImageFont
-from paddleocr import PaddleOCR
 import paddle
+#paddle.utils.run_check()
+from paddleocr import PaddleOCR
 import atexit
 from multiprocessing import Pool, cpu_count
 
