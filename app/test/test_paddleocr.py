@@ -12,6 +12,7 @@ import paddle
 from paddleocr import PaddleOCR
 import atexit
 from multiprocessing import Pool, cpu_count
+from multiprocessing.pool import ThreadPool
 
 # mac
 # video_path = "/Users/monkeygeek/Downloads/test.webm"
@@ -26,11 +27,9 @@ font_file_path = "F:\download\STHeitiMedium.ttc"
 # 全局变量用于保持进程内资源
 process_data = {}
 
-def init_process(video_path, font_file_path, use_gpu):
+def init_process(font_file_path, use_gpu):
     """进程初始化函数，整个进程生命周期只执行一次"""
-    # 初始化视频对象
-    process_data['clip'] = VideoFileClip(video_path)
-    
+
     # 初始化OCR模型
     process_data['ocr'] = PaddleOCR(
                     use_angle_cls=False, # 关闭方向检测,提升速度
@@ -42,30 +41,21 @@ def init_process(video_path, font_file_path, use_gpu):
                     layout=False,  # 关闭布局分析（不需要结构）
                     table=False,   # 关闭表格识别（不需要表格）
                     use_gpu=use_gpu, # GPU开关
-                    max_batch_size=100, # 最大批次
+                    max_batch_size=100, # 最大批次（将多个图像合并成一个批次，此参数设定了批次的最大容量）
                     lang="ch" # 识别中文
                     )
     
     # 注册退出清理函数
     def cleanup():
-        if 'clip' in process_data:
-            process_data['clip'].close()
         if 'ocr' in process_data:
             del process_data['ocr']  # 显式释放OCR模型
     atexit.register(cleanup)
 
-def process_frame(args):
+def process_frame(frame_path):
     """处理单个帧"""
-    t, tmp_path = args
     try:
         # 从进程全局数据获取资源
-        clip = process_data['clip']
         ocr = process_data['ocr']
-        
-        # 获取帧并保存
-        frame = clip.get_frame(t)
-        frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.png")
-        Image.fromarray(frame).save(frame_path)
         
         # OCR检测
         result = ocr.ocr(frame_path, det=True, rec=False, cls=False)
@@ -89,9 +79,12 @@ def process_frame(args):
 
 def generate_tasks(video_path, tmp_path):
     """生成器函数，按需产生任务"""
+    os.makedirs(tmp_path, exist_ok=True)
     with VideoFileClip(video_path) as clip:
-        for t, _ in clip.iter_frames(with_times=True):
-            yield (t, tmp_path)
+        for t, frame in clip.iter_frames(with_times=True, dtype='uint8'):
+            frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.png")
+            Image.fromarray(frame).save(frame_path)
+            yield frame_path
 
 def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_file_path: str):
     """优化后的多进程版本"""
@@ -101,19 +94,22 @@ def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_
     # GPU配置
     use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.get_device() == "gpu:0"
     
-    # 创建进程池
-    with Pool(
-        processes=cpu_count(),
-        initializer=init_process,
-        initargs=(video_path, font_file_path, use_gpu)
-    ) as pool:
-        # 使用生成器按需产生任务
+    # 主进程初始化OCR模型
+    init_process(font_file_path, use_gpu)
+
+    # 创建线程池（共享OCR模型）
+    with ThreadPool(processes=cpu_count()) as pool:
+        # 生成任务（直接传递帧文件路径）
         task_generator = generate_tasks(video_path, tmp_path)
         
         # 使用imap实现流式处理
         for _ in pool.imap(process_frame, task_generator, chunksize=5):
             pass
     
+    # 执行清理
+    if 'ocr' in process_data:
+        del process_data['ocr']
+
     print(f"总执行时间：{time.time() - start_time:.6f} 秒")
 
 
