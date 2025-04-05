@@ -115,13 +115,19 @@ def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_
     # GPU配置
     use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.get_device() == "gpu:0"
     
-    # 在 init_process 中动态设置
-    # sample_frame = next(generate_tasks(video_path, tmp_path))  # 获取第一帧示例
-    # frame_size = Image.open(sample_frame).size
-    # max_batch_size = max(1, min(100, 4000 // (frame_size[0] * frame_size[1] // 1000)))  # 经验公式
+    # 动态计算max_batch_size
+    cap = cv2.VideoCapture(video_path)
+    ret, sample_frame = cap.read()
+    cap.release()
+    if ret:
+        h, w = sample_frame.shape[:2]
+        frame_area = h * w
+        max_batch_size = max(1, min(100, 4000 // (frame_area // 1000)))
+    else:
+        max_batch_size = 100
 
     # 主进程初始化OCR模型
-    init_process(font_file_path, use_gpu,100)
+    init_process(font_file_path, use_gpu,max_batch_size)
 
     # 启动生产者线程
     producer_thread = threading.Thread(target=producer, args=(video_path, tmp_path))
