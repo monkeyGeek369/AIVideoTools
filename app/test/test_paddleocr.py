@@ -29,7 +29,6 @@ font_file_path = "F:\download\STHeitiMedium.ttc"
 # 全局变量用于保持进程内资源
 process_data = {}
 task_queue = queue.Queue(maxsize=100)
-result_queue = queue.Queue()
 
 def init_process(font_file_path, use_gpu,max_batch_size):
     """进程初始化函数，整个进程生命周期只执行一次"""
@@ -85,7 +84,6 @@ def consumer():
             
             image.save(frame_path)
             image.close()
-            result_queue.put(1)  # 标记任务完成
     except Exception as e:
         print(f"处理帧时发生错误: {str(e)}")
 
