@@ -1,5 +1,5 @@
 from moviepy.editor import VideoFileClip
-import os,time
+import os,time,cv2
 import threading
 import queue
 # import torch
@@ -91,12 +91,20 @@ def consumer():
 
 def producer(video_path, tmp_path):
     """生成器函数，按需产生任务"""
-    os.makedirs(tmp_path, exist_ok=True)
-    with VideoFileClip(video_path) as clip:
-        for t, frame in clip.iter_frames(with_times=True, dtype='uint8'):
-            frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.png")
-            Image.fromarray(frame).save(frame_path)
-            task_queue.put(frame_path)  # 将任务放入队列
+    os.makedirs(tmp_path, exist_ok=True)    
+    cap = cv2.VideoCapture(video_path)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    frame_count = 0
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+        t = frame_count / fps
+        frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.jpg")
+        cv2.imwrite(frame_path, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        task_queue.put(frame_path)
+        frame_count += 1
+    cap.release()
     task_queue.put(None)  # 结束标志
 
 def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_file_path: str):
