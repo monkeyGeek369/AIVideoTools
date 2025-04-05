@@ -15,6 +15,7 @@ from paddleocr import PaddleOCR
 import atexit
 from multiprocessing import Pool, cpu_count
 from multiprocessing.pool import ThreadPool
+from concurrent.futures import ThreadPoolExecutor
 
 # mac
 # video_path = "/Users/monkeygeek/Downloads/test.webm"
@@ -132,8 +133,10 @@ def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_
     producer_thread.start()
 
     # 创建线程池（共享OCR模型）
-    with ThreadPool(processes=cpu_count()) as pool:
-        pool.map(lambda x: consumer(), range(cpu_count()))  # 每个线程执行consumer
+    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+        futures = [executor.submit(consumer) for _ in range(cpu_count())]
+        for future in futures:
+            future.result()
     
     producer_thread.join()
     # 执行清理
