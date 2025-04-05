@@ -74,17 +74,19 @@ def consumer():
                 return
 
             # 绘制检测框
-            image = Image.open(frame_path)
-            draw = ImageDraw.Draw(image)
+            image = cv2.imread(frame_path)
+            # 遍历结果并绘制矩形框
             for item in result[0]:
                 top_left = tuple(map(int, item[0]))
                 bottom_right = tuple(map(int, item[2]))
-                
+
+                # 检查坐标是否有效
                 if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
-                    draw.rectangle([top_left, bottom_right], outline="red", width=6)
-            
-            image.save(frame_path)
-            image.close()
+                    # 使用 OpenCV 绘制矩形
+                    cv2.rectangle(image, top_left, bottom_right, (0, 0, 255), thickness=6)  # (0, 0, 255) 是红色
+
+            # 保存图像
+            cv2.imwrite(frame_path, image)
     except Exception as e:
         print(f"处理帧时发生错误: {str(e)}")
 
