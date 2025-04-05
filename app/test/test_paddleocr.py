@@ -136,11 +136,14 @@ def test_video_subtitle_position_recognize(video_path: str, tmp_path: str, font_
 
     # 创建线程池（共享OCR模型）
     with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+        # 获取异步执行结果：用于结果获取、状态获取、回调机制
         futures = [executor.submit(consumer) for _ in range(cpu_count())]
         for future in futures:
             future.result()
     
+    # 等待生产者线程结束
     producer_thread.join()
+
     # 执行清理
     if 'ocr' in process_data:
         del process_data['ocr']
