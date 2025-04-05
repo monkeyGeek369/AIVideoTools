@@ -76,7 +76,7 @@ def process_frame(frame_path):
         image.save(frame_path)
         image.close()
     except Exception as e:
-        print(f"处理帧 {t} 时发生错误: {str(e)}")
+        print(f"处理帧时发生错误: {str(e)}")
 
 def generate_tasks(video_path, tmp_path):
     """生成器函数，按需产生任务"""
