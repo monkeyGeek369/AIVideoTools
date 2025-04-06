@@ -21,6 +21,7 @@ def init_paddleocr(use_gpu,max_batch_size):
                     #cls_model_dir="./resource/ocr_model/ch_ppocr_mobile_v2.0_cls_train",#文本分类
                     rec=False,
                     cls=False,
+                    det_db_unclip_ratio=2.4,
                     layout=False,  # 关闭布局分析（不需要结构）
                     table=False,   # 关闭表格识别（不需要表格）
                     precision='int8',  # 显式指定精度

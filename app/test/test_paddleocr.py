@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 # font_file_path = "/Users/monkeygeek/Documents/softProject/AIVideoTools/resource/fonts/STHeitiMedium.ttc"
 
 # windows
-video_path = "F:\download\\test.webm"
+video_path = "F:\download\\小哥在路边捡了一个蛋，没想到后来小家伙酷爱跑步拿了跑步冠军.webm"
 tmp_path = "F:\download\\tmp"
 font_file_path = "F:\download\STHeitiMedium.ttc"
 
@@ -42,6 +42,7 @@ def init_process(font_file_path, use_gpu,max_batch_size):
                     #cls_model_dir="./resource/ocr_model/ch_ppocr_mobile_v2.0_cls_train",#文本分类
                     rec=False,
                     cls=False,
+                    det_db_unclip_ratio=2.4,# 将检测到的文本框按照指定的比例进行扩展，以便更好地包裹文字区域
                     layout=False,  # 关闭布局分析（不需要结构）
                     table=False,   # 关闭表格识别（不需要表格）
                     precision='int8',  # 显式指定精度
