@@ -59,7 +59,6 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         # get video base info
         video_clip = VideoFileClip(edit_video_path)
         video_duration = video_clip.duration
-        video_height = video_clip.h
         audio_clips = []
         
         # bg music
@@ -95,14 +94,14 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         # subtitle
         subtitle_clips = []
         if subtitle_check:
-            subtitle_clips = get_subtitle_clips(video_height,edit_video_path,task_path)
+            video_clip,subtitle_clips = get_subtitle_clips(video_clip)
             if subtitle_clips is None or len(subtitle_clips) == 0:
                 raise Exception(tr("subtitle_info_not_found"))
 
         # get save path
         compound_videos_path = os.path.join(task_path, "compound_videos")
         file_utils.ensure_directory(compound_videos_path)
-        video_polish_name  = st.session_state['video_polish_name']
+        video_polish_name  = st.session_state['video_polish_name'] if 'video_polish_name' in st.session_state else None
         if video_polish_name is None or len(video_polish_name) == 0:
             video_polish_name = "compound_video"
         if len(video_polish_name) > 100:
@@ -112,6 +111,8 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         # save
         mix_audio_clip = CompositeAudioClip(audio_clips)
         video_clip = video_clip.set_audio(mix_audio_clip)
+        if not video_clip or video_clip.size == (0, 0):
+            raise ValueError("无效的视频剪辑输入")
         final_clip = video_clip
         if subtitle_clips and len(subtitle_clips) > 0:
             final_clip = CompositeVideoClip([video_clip] + subtitle_clips, size=video_clip.size)        
@@ -270,7 +271,8 @@ def get_subtitle_params():
         'stroke_width': st.session_state.get('stroke_width', 1.5),
     }
 
-def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextClip]:
+def get_subtitle_clips(video_clip) -> tuple:
+    # get subtitle file
     subtitle_path = st.session_state['edit_subtitle_path']
     subtitle_params = get_subtitle_params()
     font_path = utils.font_dir(subtitle_params['font_name'])
@@ -283,10 +285,11 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
     subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
     recognize_poistion = subtitle_position_dict.get("edit_video.mp4")
     recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
-    recognize_height = video_height // 2
+    recognize_height = video_clip.h // 2
+    result_clip = video_clip
     if recognize_position_model.is_exist:
         recognize_height = int(recognize_position_model.left_top_y)
-        video.video_subtitle_mosaic_auto(video_path=video_path,subtitle_position_coord=recognize_position_model,task_path=task_path)
+        result_clip = video.video_subtitle_mosaic_auto(video_clip=video_clip,subtitle_position_coord=recognize_position_model)
 
     # base check
     if not os.path.exists(subtitle_path):
@@ -321,7 +324,7 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
                 else:
                     position = video.calculate_subtitle_position(
                         subtitle_params['position'],
-                        video_height,
+                        video_clip.h,
                         subtitle_params['custom_position']
                     )
 
@@ -351,6 +354,6 @@ def get_subtitle_clips(video_height,video_path:str,task_path:str) -> list[TextCl
             subs = None
             del subs
 
-    return subtitle_clips
+    return result_clip,subtitle_clips
 
 

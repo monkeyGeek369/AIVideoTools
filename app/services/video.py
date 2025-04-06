@@ -1,5 +1,4 @@
 import traceback
-
 import pysrt
 from typing import Optional
 from typing import List
@@ -19,9 +18,10 @@ import os,easyocr,shutil,random
 from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
-from app.services import mosaic
+from app.services import mosaic,paddleocr
 from app.utils import file_utils,utils
 import torch
+import streamlit as st
 
 def wrap_text(text, max_width, font, fontsize=60):
     """
@@ -467,46 +467,13 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
         count:int
         frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int]]]]
     '''
-    # load video
-    clip = VideoFileClip(video_path)
-    prev_frame = None
-    reader = create_easyocr_reader()
-    frame_subtitles_position = {}
-
-    try:
-        coordinates = {}  # {frame_time: [(top_left, bottom_right), ...]}
-
-        for t, frame in clip.iter_frames(with_times=True):
-            video_frame = clip.get_frame(t)
-            result = reader.readtext(video_frame,
-                                    detail=1,
-                                    batch_size=10, # 批处理大小
-                                    )
-            
-            frame_subtitles_position[t] = []
-
-            # 遍历识别结果
-            for item in result:
-                text = item[1]
-                if text.strip() and item[0] is not None and len(item[0]) == 4:
-                    top_left = tuple(map(int, item[0][0]))
-                    bottom_right = tuple(map(int, item[0][2]))
-                    frame_subtitles_position[t].append((top_left, bottom_right))
-                    if t not in coordinates:
-                        coordinates[t] = []
-                    coordinates[t].append((top_left, bottom_right))
-    finally:
-        # 关闭视频文件
-        clip.close()
-        del clip
-        del reader
-        del prev_frame
-        # clean cache
-        torch.cuda.empty_cache()
-
+    # frames coordinates
+    task_path = st.session_state['task_path']
+    frame_tmp_path = os.path.join(task_path, "frame_tmp")
+    frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
         
     # 提取所有坐标
-    all_coords = [coord for coords in coordinates.values() for coord in coords]
+    all_coords = [coord for coords in frame_subtitles_position.values() for coord in coords]
 
     # 对所有坐标进行过滤
     all_coords = filter_coordinates(all_coords,min_area=min_area)
@@ -634,69 +601,27 @@ def is_overlap_over_half(base_rect, other_rect):
     # 判断重叠面积是否超过其他矩形面积的50%
     return overlap_area > 0.5 * other_area
 
-def video_subtitle_mosaic_auto(video_path:str|None,subtitle_position_coord:SubtitlePositionCoord|None,task_path:str):
+def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositionCoord|None):
     '''
     auto recognize subtitle and mosaic
     subtitle position within the range subtitle_position_coord
     '''
     
     # base check
-    if video_path is None:
-        raise Exception("video file not found")
-    if not os.path.exists(video_path):
-        raise Exception("video file not found")
+    if video_clip is None:
+        raise Exception("video clip not found")
     if subtitle_position_coord is None:
-        raise Exception("video subtitle position not recognized,please recognize it first")
+        logger.info("video subtitle position not recognized,please recognize it first")
+        return video_clip
     if not subtitle_position_coord.is_exist:
         logger.info("video subtitle position recognized is empty, no need to mosaic")
-        return
+        return video_clip
 
     # get subtitle position
-    # base_rect = (
-    #     (subtitle_position_coord.left_top_x, subtitle_position_coord.left_top_y),
-    #     (subtitle_position_coord.right_bottom_x, subtitle_position_coord.right_bottom_y)
-    # )
     frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
 
-    # create temp video
-    temp_path = os.path.join(task_path, "tmp")
-    file_utils.ensure_directory(temp_path)
-    temp_video_path = os.path.join(temp_path, "edit_video_tmp.mp4")
-
     # load video
-    video = VideoFileClip(video_path)
-    # reader = create_easyocr_reader()
-    try:
-        video_with_mosaic = video.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position))
-        #video_with_mosaic = video.fl_image(lambda frame: recognize_subtitle_and_mosaic(frame,base_rect,reader=reader))        
-        temp_audio_path = os.path.join(task_path, "temp", "mosaic-audio.aac")
-        video_with_mosaic.write_videofile(
-            temp_video_path,
-            codec='libx264',
-            audio_codec='aac',
-            fps=video.fps,
-            preset='medium',
-            threads=os.cpu_count(),
-            ffmpeg_params=[
-                "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
-                "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
-                "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
-                "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
-            ],
-            write_logfile=False, #是否写入日志
-            remove_temp=True,#是否删除临时文件
-            temp_audiofile=temp_audio_path  #指定音频的临时文件路径
-        )
-    finally:
-        video.close()
-        del video
-        del video_with_mosaic
-        #del reader
-        torch.cuda.empty_cache()
-
-    # replace old video
-    shutil.copy2(temp_video_path, video_path)
-    os.remove(temp_video_path)
+    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position))
 
 def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     '''
