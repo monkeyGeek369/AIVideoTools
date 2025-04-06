@@ -665,7 +665,7 @@ def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[
 
     return frame_copy
 
-def generate_video_by_images(video_clip:VideoFileClip,image_folder, fps=24, duration=10,last_frame_duration=3):
+def generate_video_by_images(video_size,image_folder, fps=24, duration=10,last_frame_duration=3):
     image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) 
                   if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))]
     
@@ -690,6 +690,5 @@ def generate_video_by_images(video_clip:VideoFileClip,image_folder, fps=24, dura
         clips.append(last_clip)
     
     image_clip = concatenate_videoclips(clips, method="compose")
-    image_clip = image_clip.resize(video_clip.size)
-    final_clip = concatenate_videoclips([video_clip, image_clip])
-    return final_clip
+    image_clip = image_clip.resize(video_size)
+    return image_clip

@@ -8,6 +8,7 @@ from loguru import logger
 from app.services import video,subtitle
 from app.models.schema import SubtitlePosition
 from app.models.subtitle_position_coord import SubtitlePositionCoord
+from moviepy.editor import concatenate_videoclips
 
 
 def render_compound_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
@@ -89,7 +90,7 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         # end_bless
         if end_bless_check:
             end_image_path = utils.end_images_dir()
-            video_clip = video.generate_video_by_images(video_clip,end_image_path,video_clip.fps,3,2)
+            end_bless_clip = video.generate_video_by_images(video_clip.size,end_image_path,video_clip.fps,3,2)
         
         # subtitle
         subtitle_clips = []
@@ -115,7 +116,9 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
             raise ValueError("无效的视频剪辑输入")
         final_clip = video_clip
         if subtitle_clips and len(subtitle_clips) > 0:
-            final_clip = CompositeVideoClip([video_clip] + subtitle_clips, size=video_clip.size)        
+            final_clip = CompositeVideoClip([video_clip] + subtitle_clips, size=video_clip.size)
+        if end_bless_check and end_bless_clip:
+            final_clip = concatenate_videoclips([final_clip, end_bless_clip])
                     
         temp_audio_path = os.path.join(task_path, "temp")
         if not os.path.exists(temp_audio_path):
@@ -157,12 +160,16 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
     finally:
         if video_clip is not None:
             video_clip.close()
-        for audio_clip in audio_clips:
-            if audio_clip is not None:
-                audio_clip.close()
-        for subtitle_clip in subtitle_clips:
-            if subtitle_clip is not None:
-                subtitle_clip.close()
+        if end_bless_clip is not None:
+            end_bless_clip.close()
+        if audio_clips is not None:
+            for audio_clip in audio_clips:
+                if audio_clip is not None:
+                    audio_clip.close()
+        if subtitle_clips is not None:
+            for subtitle_clip in subtitle_clips:
+                if subtitle_clip is not None:
+                    subtitle_clip.close()
         if mix_audio_clip is not None:
             mix_audio_clip.close()
         if final_clip is not None:
