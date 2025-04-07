@@ -12,7 +12,7 @@ from pydub import AudioSegment
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from multiprocessing import Pool,shared_memory
 import gc,random
-from services.audio import audio_visualization_effect as ave
+from ..services.audio import audio_visualization_effect as ave
 
 
 # mac
