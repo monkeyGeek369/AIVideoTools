@@ -101,7 +101,7 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
 
         # audio vfx
         if video_audio_vfx:
-            final_clip = audio.audio_visualization_effect(final_clip)
+            final_clip = audio.audio_visualization_effect(final_clip,task_path)
 
         # save
         final_clip.write_videofile(

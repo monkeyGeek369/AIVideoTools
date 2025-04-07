@@ -9,7 +9,7 @@ from app.utils import file_utils
 import gc
 from multiprocessing import Pool,shared_memory
 from pydub import AudioSegment
-import cv2
+import cv2,time
 
 
 class VideoProcessor:
@@ -108,12 +108,13 @@ def process_frame_wrapper(args):
     file_path = os.path.join(frame_file_path, f"{index}.npy")
     np.save(file_path, result[1])
 
-def audio_visualization_effect(video_clip):
+def audio_visualization_effect(video_clip,task_path):
+    start = time.time()
+
     video = video_clip
     fps = video.fps
 
     # get bg music
-    task_path = st.session_state['task_path']
     edit_bg_musics_path = os.path.join(task_path, "edit_bg_musics")
     file_utils.ensure_directory(edit_bg_musics_path)
     edit_bg_musics_file_path = os.path.join(edit_bg_musics_path, "edit_bg_music.mp3")
@@ -162,6 +163,9 @@ def audio_visualization_effect(video_clip):
         if frame is None:
             frame = get_frame(t).astype(np.uint8)
         return frame
+    
+    endtime = time.time()
+    print("audio_visualization_effect time:", endtime - start)
 
     gc.collect()
     return video.fl(get_frame)
