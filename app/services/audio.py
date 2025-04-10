@@ -2,12 +2,9 @@ import matplotlib
 matplotlib.use('Agg')  # 强制使用无头渲染模式
 from moviepy.editor import *
 import numpy as np
-from PIL import Image
 import matplotlib.pyplot as plt
-import streamlit as st
 from app.utils import file_utils
 import gc
-from multiprocessing import Pool,shared_memory
 from pydub import AudioSegment
 import cv2,time
 import queue
@@ -99,7 +96,7 @@ def audio_data_consumer(num_bars, sub_grids_per_bar, sub_height, bar_width, colo
             break
         result = add_visualization(frame,fig,ax,num_bars,sub_grids_per_bar,sub_height,segment,bar_width,colors,vis_height)
         file_path = os.path.join(frame_file_path, f"{index}.npy")
-        np.save(file_path, result[1])
+        np.save(file_path, result)
 
 def audio_visualization_effect(video_clip,task_path):
     start = time.time()
