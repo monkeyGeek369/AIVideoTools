@@ -55,7 +55,7 @@ def create(audio_file, subtitle_file: str = ""):
                         model = WhisperModel(
                             model_size_or_path=model_path,
                             device="cuda",
-                            compute_type="float16",
+                            compute_type="float32",
                             local_files_only=True
                         )
                     device = "cuda"
@@ -98,11 +98,19 @@ def create(audio_file, subtitle_file: str = ""):
     try:
         segments, info = model.transcribe(
             audio_file,
-            beam_size=5,
-            word_timestamps=True,
-            vad_filter=True,
-            vad_parameters=dict(min_silence_duration_ms=500),
-            initial_prompt="以下是普通话的句子"
+            beam_size=10,#使用束搜索(beam search)算法进行解码，束宽设为5。较大的值可以提高准确性但会降低速度
+            best_of=3,#最优解，3个解码器输出，每个解码器输出的最大词数为512，较大的值可以提高准确性但会降低速度
+            word_timestamps=True,#为每个单词生成时间戳信息
+            vad_filter=True,#启用语音活动检测(VAD)过滤，自动过滤掉静音部分
+            temperature=0.3,#控制解码时的随机性，较低的值(如0.3)使输出更确定性和保守
+            no_repeat_ngram_size=2,#防止2-gram重复出现，减少重复内容
+            vad_parameters=dict(
+                min_silence_duration_ms=300,#设置VAD参数，这里指定最小静音持续时间为300毫秒
+                speech_pad_ms=200 # 语音前后填充时间（避免截断）
+                ),
+            language="zh",
+            task="transcribe",#执行转录任务(与"translate"翻译任务相对)
+            initial_prompt="以下是清晰的标准普通话，不含背景噪音，文本连贯无重复"
         )
     except Exception as e:
         model = None
