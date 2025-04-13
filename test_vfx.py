@@ -16,18 +16,18 @@ from app.services.audio import audio_visualization_effect as ave
 
 
 # mac
-video0_path = "/Users/monkeygeek/Downloads/baobei.mp4"
-video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
-video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
-output_path = "/Users/monkeygeek/Downloads/output.mp4"
-image_frame_path = "/Users/monkeygeek/Downloads/tmp"
+# video0_path = "/Users/monkeygeek/Downloads/baobei.mp4"
+# video1_path = "/Users/monkeygeek/Downloads/baobei-0-6.mp4"
+# video2_path = "/Users/monkeygeek/Downloads/baobei-6-12.mp4"
+# output_path = "/Users/monkeygeek/Downloads/output.mp4"
+# image_frame_path = "/Users/monkeygeek/Downloads/tmp"
 
 # windows
-# video0_path = "F:\download\\test.webm"
-# video1_path = "F:\download\\test-0-6.mp4"
-# video2_path = "F:\download\\test-6-12.mp4"
-# output_path = "F:\download\\test_out.mp4"
-# image_frame_path = "F:\download\\tmp"
+video0_path = "F:\download\\test.webm"
+video1_path = "F:\download\\test-0-6.mp4"
+video2_path = "F:\download\\test-6-12.mp4"
+output_path = "F:\download\\test_out.mp4"
+image_frame_path = "F:\download\\tmp"
 
 def transfer_origin_video():
     video = VideoFileClip("F:\download\\test.webm")
