@@ -115,4 +115,7 @@ def apply_perspective_background_color(frame, x1, y1, x2, y2,extend_factor):
 
    return copy_frame
 
-
+def telea_mosaic(frame, x1, y1, x2, y2):
+   mask = np.zeros(frame.shape[:2], dtype=np.uint8)
+   cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
+   return cv2.inpaint(frame, mask, 3, cv2.INPAINT_TELEA)

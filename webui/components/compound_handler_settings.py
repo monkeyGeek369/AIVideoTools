@@ -61,6 +61,7 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         video_clip = VideoFileClip(edit_video_path)
         video_duration = video_clip.duration
         audio_clips = []
+        end_bless_clip = None
         
         # bg music
         if bg_music_check:

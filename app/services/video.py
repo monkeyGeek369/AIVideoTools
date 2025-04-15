@@ -656,12 +656,17 @@ def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[
 
     # 处理当前帧
     for top_left, bottom_right in frame_subtitles_position.get(t, []):
-        frame_copy = mosaic.apply_perspective_background_color(frame=frame_copy,
-                                                                    x1=top_left[0],
-                                                                    y1=top_left[1],
-                                                                    x2=bottom_right[0],
-                                                                    y2=bottom_right[1],
-                                                                    extend_factor = 2)
+        # frame_copy = mosaic.apply_perspective_background_color(frame=frame_copy,
+        #                                                             x1=top_left[0],
+        #                                                             y1=top_left[1],
+        #                                                             x2=bottom_right[0],
+        #                                                             y2=bottom_right[1],
+        #                                                             extend_factor = 2)
+        frame_copy = mosaic.telea_mosaic(frame=frame_copy,
+                                            x1=top_left[0],
+                                            y1=top_left[1],
+                                            x2=bottom_right[0],
+                                            y2=bottom_right[1])
 
     return frame_copy
 
