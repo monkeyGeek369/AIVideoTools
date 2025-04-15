@@ -112,3 +112,19 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
 
     return frame_coordinates
 
+def get_frame_coordinates(frame_file_path:str,use_gpu:bool) -> list:
+    init_paddleocr(use_gpu,100)
+
+    coordinates = []
+    result = paddle_ocr.ocr(frame_file_path, det=True, rec=False, cls=False)
+    if not result or not result[0]:
+        return coordinates
+
+    for item in result[0]:
+        top_left = tuple(map(int, item[0]))
+        bottom_right = tuple(map(int, item[2]))
+
+        if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
+            coordinates.append((top_left, bottom_right))
+    return coordinates
+
