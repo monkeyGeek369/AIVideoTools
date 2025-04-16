@@ -43,14 +43,16 @@ def render_subtitle_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     llm_url = ai_container.text_input(label=tr("base_url"),key="llm_url",value="http://localhost:1234/v1")
     llm_api_key = ai_container.text_input(label=tr("api_key"),key="llm_api_key",value="lm-studio")
     llm_model = ai_container.text_input(label=tr("model"),key="llm_model",value="qwen2.5-14b-instruct")
-    llm_prompt = ai_container.text_area(label=tr("prompt"),key="llm_prompt",value="""你现在是一名中文视频字幕处理专家，给定的中文字幕信息包含多段字幕，每一段字幕包含【字幕index、字幕时间范围、字幕内容】三种数据。当给到你字幕数据后希望你进行如下处理。
+    llm_prompt = ai_container.text_area(label=tr("prompt"),key="llm_prompt",value="""
+你现在是一名中文视频字幕处理专家，给定的中文字幕信息包含多段字幕，每一段字幕包含【字幕index、字幕时间范围、字幕内容】三种数据。当给到你字幕数据后希望你进行如下处理。
 1、字幕index、字幕时间范围无需任何变动。
-2、针对每一段字幕一定要重新生成字幕内容。
-3、新生成的字幕内容要与原字幕上下文语意相同但文字要有差异，且字数一定不能超过原字数。
-4、直接输出处理后的中文字幕结果，无需输出其它内容。
-5、输出格式要与原格式相同。
-6、禁止带标点符号，可以用空格代替。
-7，第一段字幕信息中的字幕index一定是数字1，所有的字幕index序号保持不变，不能是None。                                    
+2、针对不符合上下文语意的字幕，错别字严重的字幕进行删除
+3、针对剩余的每一段字幕一定要重新生成字幕内容。
+4、新生成的字幕内容要与原字幕上下文语意相同但文字要有差异，且字数一定不能超过原字数。
+5、直接输出处理后的中文字幕结果，无需输出其它内容。
+6、输出格式要与原格式相同。
+7、禁止带标点符号，可以用空格代替。
+8，第一段字幕信息中的字幕index一定是数字1，所有的字幕index序号一定是自增的，不能是None。                                 
 """)
     llm_temperature = ai_container.text_input(label=tr("temperature"),key="llm_temperature",value="0.7")
 
