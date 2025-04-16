@@ -110,7 +110,7 @@ def create(audio_file, subtitle_file: str = ""):
                 ),
             language="zh",
             task="transcribe",#执行转录任务(与"translate"翻译任务相对)
-            initial_prompt="以下是清晰的标准普通话，不含背景噪音，文本连贯无重复"
+            initial_prompt="以下是清晰的标准普通话，文本连贯无重复"
         )
     except Exception as e:
         model = None
