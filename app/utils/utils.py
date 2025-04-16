@@ -158,8 +158,10 @@ def get_bgm_file(bgm_type: str = "random", bgm_file: str = ""):
         if not files:
             logger.warning(f"在目录 {song_dir_path} 中没有找到 MP3 或 FLAC 文件")
             return ""
-
-        return random.choice(files)
+        
+        random.seed()  # 显式重新种子化随机数生成器
+        return random.sample(files, 1)[0]
+        #return random.choice(files)
 
     return ""
 
