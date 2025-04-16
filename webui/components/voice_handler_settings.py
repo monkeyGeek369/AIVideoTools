@@ -3,6 +3,7 @@ from app.services import voice,subtitle,audio_merger
 import streamlit as st
 from app.utils import utils,file_utils
 import os,random
+import secrets
 
 
 def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
@@ -29,10 +30,12 @@ def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,
             .replace("Neural", "")
             for v in voices
         }
+        
+        random_index = secrets.randbelow(len(friendly_names))
         selected_friendly_name = col2.selectbox(
             tr("speech_synthesis"),
             options=list(friendly_names.values()),
-            index=random.randint(0, len(friendly_names) - 1),
+            index=min(random_index, len(friendly_names) - 1),
         )
 
         # get voice name
