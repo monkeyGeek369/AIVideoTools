@@ -1,6 +1,9 @@
 requests~=2.31.0
 moviepy==2.0.0.dev2
-faster-whisper==0.9.0
+# whisper版本0.9.0支持v2模型，0.10.0及以上支持v3模型
+faster-whisper==0.10.0
+# whisper的v3模型需要ctranslate2>=3.22.0版本，过低不支持，过高则需要cudnn较高版本。例如3.22.0兼容torch 11.8
+ctranslate2==3.22.0
 uvicorn~=0.27.1
 fastapi~=0.115.4
 tomli~=2.0.1

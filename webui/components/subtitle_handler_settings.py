@@ -52,7 +52,7 @@ def render_subtitle_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
 5、直接输出处理后的中文字幕结果，无需输出其它内容。
 6、输出格式要与原格式相同。
 7、禁止带标点符号，可以用空格代替。
-8，第一段字幕信息中的字幕index一定是数字1，所有的字幕index序号一定是自增的，不能是None。                                 
+8，第一段字幕信息中的字幕index一定是数字1，其余字幕index序号一定是从1开始自增而来的，不能是None。
 """)
     llm_temperature = ai_container.text_input(label=tr("temperature"),key="llm_temperature",value="0.7")
 

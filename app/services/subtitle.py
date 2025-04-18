@@ -33,7 +33,7 @@ def create(audio_file, subtitle_file: str = ""):
     model = None
 
     # 加载 Whisper 模型check
-    model_path = f"{utils.root_dir()}/app/models/faster-whisper-large-v2"
+    model_path = f"{utils.root_dir()}/app/models/faster-whisper-large-v3"
     model_bin_file = f"{model_path}/model.bin"
     if not os.path.isdir(model_path) or not os.path.isfile(model_bin_file):
         logger.error(
