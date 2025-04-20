@@ -3,16 +3,16 @@ import os.path
 import re
 import traceback
 from typing import Optional
-
+import streamlit as st
 from faster_whisper import WhisperModel
 from timeit import default_timer as timer
 from loguru import logger
 from moviepy.editor import VideoFileClip
 import os
 from PIL import ImageFont
-
 from app.config import config
-from app.utils import utils
+from app.utils import utils,str_util
+from app.models.subtitle_position_coord import SubtitlePositionCoord
 
 model_size = config.whisper.get("model_size", "faster-whisper-large-v2")
 device = config.whisper.get("device", "cpu")
@@ -236,89 +236,6 @@ def file_to_subtitles(filename):
                 current_text += line
     return times_texts
 
-def levenshtein_distance(s1, s2):
-    '''
-    计算字符串编辑距离
-    '''
-    if len(s1) < len(s2):
-        return levenshtein_distance(s2, s1)
-
-    if len(s2) == 0:
-        return len(s1)
-
-    previous_row = range(len(s2) + 1)
-    for i, c1 in enumerate(s1):
-        current_row = [i + 1]
-        for j, c2 in enumerate(s2):
-            insertions = previous_row[j + 1] + 1
-            deletions = current_row[j] + 1
-            substitutions = previous_row[j] + (c1 != c2)
-            current_row.append(min(insertions, deletions, substitutions))
-        previous_row = current_row
-
-    return previous_row[-1]
-
-def similarity(a, b):
-    '''
-    计算字符串相似度
-    '''
-    distance = levenshtein_distance(a.lower(), b.lower())
-    max_length = max(len(a), len(b))
-    return 1 - (distance / max_length)
-
-def extract_audio_and_create_subtitle(video_file: str, subtitle_file: str = "") -> Optional[str]:
-    """
-    从视频文件中提取音频并生成字幕文件。
-
-    参数:
-    - video_file: MP4视频文件的路径
-    - subtitle_file: 输出字幕文件的路径（可选）。如果未提供，将根据视频文件名自动生成。
-
-    返回:
-    - str: 生成的字幕文件路径
-    - None: 如果处理过程中出现错误
-    """
-    try:
-        # 获取视频文件所在目录
-        video_dir = os.path.dirname(video_file)
-        video_name = os.path.splitext(os.path.basename(video_file))[0]
-        
-        # 设置音频文件路径
-        audio_file = os.path.join(video_dir, f"{video_name}_audio.wav")
-        
-        # 如果未指定字幕文件路径，则自动生成
-        if not subtitle_file:
-            subtitle_file = os.path.join(video_dir, f"{video_name}.srt")
-        
-        logger.info(f"开始从视频提取音频: {video_file}")
-        
-        # 加载视频文件
-        video = VideoFileClip(video_file)
-        
-        # 提取音频并保存为WAV格式
-        logger.info(f"正在提取音频到: {audio_file}")
-        video.audio.write_audiofile(audio_file, codec='pcm_s16le')
-        
-        # 关闭视频文件
-        video.close()
-        
-        logger.info("音频提取完成，开始生成字幕")
-        
-        # 使用create函数生成字幕
-        create(audio_file, subtitle_file)
-        
-        # 删除临时音频文件
-        if os.path.exists(audio_file):
-            os.remove(audio_file)
-            logger.info("已清理临时音频文件")
-        
-        return subtitle_file
-        
-    except Exception as e:
-        logger.error(f"处理视频文件时出错: {str(e)}")
-        logger.error(traceback.format_exc())
-        return None
-
 def get_text_from_subtitle(sub) -> str:
     '''
     从字幕文件的单个字幕对象中获取字幕文本
@@ -369,32 +286,127 @@ def auto_wrap_text(text, font_path, font_size, max_width):
     lines.append("".join(current_line))
     return "\n".join(lines)
 
-if __name__ == "__main__":
-    task_id = "123456"
-    task_dir = utils.task_dir(task_id)
-    subtitle_file = f"{task_dir}/subtitle_123456.srt"
-    audio_file = f"{task_dir}/audio.wav"
-    video_file = "/Users/apple/Desktop/home/NarratoAI/resource/videos/merged_video_1702.mp4"
+def analysis_subtitles(subtitles:list[tuple[int,str,str]]):
+    def parse_srt_time(time_str):
+        """将SRT时间格式转换为秒数"""
+        hhmmss, ms = time_str.strip().split(',')
+        h, m, s = hhmmss.split(':')
+        return int(h)*3600 + int(m)*60 + int(s) + int(ms)/1000
+    
+    subtitle_blocks = []
+    for index,times,text in subtitles:
+        try:
+            time_items = times.split(' --> ')
+            start = parse_srt_time(time_items[0])
+            end = parse_srt_time(time_items[1])
+            subtitle_blocks.append({
+                'original_idx': index,
+                'start': start,
+                'end': end,
+                'text': text,
+                'duration': end - start
+            })
+        except Exception as e:
+            print(f"警告：解析字幕索引 {index} 时出错：{str(e)}")
+            continue
 
-    extract_audio_and_create_subtitle(video_file, subtitle_file)
+    return subtitle_blocks
 
-    # subtitles = file_to_subtitles(subtitle_file)
-    # print(subtitles)
+def remove_valid_subtitles_by_ocr(subtitle_path:str):
+    recognize_position_model = None|SubtitlePositionCoord
+    subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
+    recognize_poistion = subtitle_position_dict.get("edit_video.mp4")
+    recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
 
-    # # script_file = f"{task_dir}/script.json"
-    # # with open(script_file, "r") as f:
-    # #     script_content = f.read()
-    # # s = json.loads(script_content)
-    # # script = s.get("script")
-    # #
-    # # correct(subtitle_file, script)
+    if recognize_position_model is None or not recognize_position_model.is_exist:
+        print("subtitle position is not exist,not need to remove subtitle")
+        return
+    frame_subtitles_position = recognize_position_model.frame_subtitles_position
 
-    # subtitle_file = f"{task_dir}/subtitle111.srt"
-    # create(audio_file, subtitle_file)
+    # 第一步：准确生成OCR时间区间（可能多个不连续区间）格式为[(0，2.36,"你好"，2),(5.12，7.45,"你好呀"，10)]
+    def generate_ocr_ranges(positions):
+        sorted_times = sorted(positions.keys())
+        if not sorted_times:
+            return []
 
-    # # # 使用Gemini模型处理音频
-    # # gemini_api_key = config.app.get("gemini_api_key")  # 请替换为实际的API密钥
-    # # gemini_subtitle_file = create_with_gemini(audio_file, api_key=gemini_api_key)
-    # #
-    # # if gemini_subtitle_file:
-    # #     print(f"Gemini生成的字幕文件: {gemini_subtitle_file}")
+        # get text regs
+        text_regs = {} # text_regs: {"这个女人"：(开始时间，结束时间，文本出现次数)}
+        for time in sorted_times: # time: 0.0, 5.12, 7.33, 10.22
+            position_results = positions[time] # position_results :[((155,1630),(919,1716),"这个女人"),((155,1630),(919,1716),"这个女人")]
+            for position_text in position_results: # position_text: ((155,1630),(919,1716),"这个女人")
+                text = position_text[2] # text: "这个女人"
+                time_result = text_regs.get(text,(time,time,0)) # time_result ： (开始时间，结束时间，文本出现次数)
+
+                # update time
+                current_start = time_result[0]
+                current_end = time
+                current_count = time_result[2] + 1
+
+                # update text_regs
+                text_regs[text] = (current_start,current_end,current_count)
+        
+        # 过滤出现次数过少的异常文本
+        text_regs = {text:time_result for text,time_result in text_regs.items() if time_result[2] > 3}
+        
+        # 将text_regs转换为[(开始时间，结束时间，文本，次数)]
+        ranges = [(time_result[0],time_result[1],text,time_result[2]) for text,time_result in text_regs.items()]
+
+        return ranges
+
+    ocr_time_ranges = generate_ocr_ranges(frame_subtitles_position)
+
+    # 第二步：处理字幕文件，格式为
+    # {
+    #             'original_idx': index,
+    #             'start': start,秒
+    #             'end': end,秒
+    #             'text': text,文本
+    #             'duration': end - start 秒
+    #         }
+    subtitles = file_to_subtitles(subtitle_path)
+    subtitle_blocks = analysis_subtitles(subtitles)
+
+    # 第三步：过滤字幕
+    def is_subtitle_valid(sub, ocr_ranges, time_coverage_threshold=0.7,text_coverage_threshold=0.7):
+        """检查字幕是否在OCR时间范围内有足够覆盖"""
+        if sub['duration'] <= 0:
+            return False
+        
+        sub_start = sub['start']
+        sub_end = sub['end']
+        sub_text = sub['text']
+
+        ocr_texts = []
+        for ocr_start, ocr_end,ocr_text,ocr_num in ocr_ranges:
+            # 如果出现文本
+            if sub_text == ocr_text:
+                return True
+            # 如果未出现则获取时间范围覆盖度达到阀值的ocr识别结果，并对比字符匹配阀值是否达到标准
+            overlap_start = max(sub_start, ocr_start)
+            overlap_end = min(sub_end, ocr_end)
+            if overlap_start < overlap_end:
+                if overlap_end - overlap_start >= (sub_end - sub_start) * time_coverage_threshold:
+                    ocr_texts.append(ocr_text)
+        if not ocr_texts:
+            return False
+        
+        for ocr_text in ocr_texts:
+            if str_util.count_common_chars(ocr_text,sub_text) / len(ocr_text) >= text_coverage_threshold:
+                return True
+
+        return False
+
+    valid_subtitles = [sub for sub in subtitle_blocks if is_subtitle_valid(sub, ocr_time_ranges)]
+
+    # 第四步：生成新字幕文件
+    output_content = []
+    for new_idx, sub in enumerate(valid_subtitles, 1):
+        output_content.append(utils.text_to_srt(new_idx, sub['text'], sub['start'], sub['end']))
+
+    # 写回文件
+    sub_item = "\n".join(output_content) + "\n"
+    with open(subtitle_path, "w", encoding="utf-8") as f:
+        f.write(sub_item)
+    print(f"字幕清理完成：原始字幕 {len(subtitle_blocks)} 条，保留 {len(valid_subtitles)} 条")
+    
+

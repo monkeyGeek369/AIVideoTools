@@ -104,6 +104,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
     material_videos_path = os.path.join(task_path, "material_videos")
     material_voices_path = os.path.join(task_path, "material_voices")
     material_subtitles_path = os.path.join(task_path, "material_subtitles")
+    subtitle_file = None
     material_bg_musics_path = os.path.join(task_path, "material_bg_musics")
 
     # get all origin videos
@@ -158,6 +159,8 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             file_name = origin_video.name+".mp4"
             video_path = os.path.join(material_videos_path,file_name)
             recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance))
+        if split_subtitles and os.path.exists(subtitle_file):
+            subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file)
 
     # show material
     show_materials(container_dict["material_video_expander"],container_dict["material_bg_music_expander"],

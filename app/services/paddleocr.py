@@ -15,12 +15,12 @@ task_queue = queue.Queue(maxsize=100)
 def init_paddleocr(use_gpu,max_batch_size):
     global paddle_ocr
     paddle_ocr = PaddleOCR(
-                    use_angle_cls=False, # 关闭方向检测,提升速度
+                    use_angle_cls=True, # 关闭方向检测,提升速度
                     det_model_dir="./resource/ocr_model/ch_PP-OCRv4_det_train",#区域检测
-                    #rec_model_dir="./resource/ocr_model/ch_PP-OCRv4_rec_train",#方向识别
-                    #cls_model_dir="./resource/ocr_model/ch_ppocr_mobile_v2.0_cls_train",#文本分类
-                    rec=False,
-                    cls=False,
+                    rec_model_dir="./resource/ocr_model/ch_PP-OCRv4_rec_infer",#方向识别
+                    cls_model_dir="./resource/ocr_model/ch_ppocr_mobile_v2.0_cls_infer",#文本分类
+                    rec=True,
+                    cls=True,
                     det_db_unclip_ratio=2.4,
                     layout=False,  # 关闭布局分析（不需要结构）
                     table=False,   # 关闭表格识别（不需要表格）
@@ -62,18 +62,20 @@ def consumer():
                 break
             
             # OCR检测
-            result = paddle_ocr.ocr(frame_path, det=True, rec=False, cls=False)
+            result = paddle_ocr.ocr(frame_path, det=True, rec=True, cls=True)
             if not result or not result[0]:
                 continue
 
             # 遍历结果并绘制矩形框
-            for item in result[0]:
-                top_left = tuple(map(int, item[0]))
-                bottom_right = tuple(map(int, item[2]))
+            for reg_result in result[0]:
+                positions = reg_result[0]
+                text = reg_result[1]
+                top_left = tuple(map(int, positions[0]))
+                bottom_right = tuple(map(int, positions[2]))
 
                 # 检查坐标是否有效
                 if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
-                    coordinates.append((top_left, bottom_right))
+                    coordinates.append((top_left, bottom_right, text[0] if len(text) >=2 else None))
             
             thread_local_results[t] = coordinates
     except Exception as e:

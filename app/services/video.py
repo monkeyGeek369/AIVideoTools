@@ -19,7 +19,7 @@ from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
 from app.services import mosaic,paddleocr
-from app.utils import file_utils,utils
+from app.utils import str_util
 import torch
 import streamlit as st
 
@@ -471,7 +471,11 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     task_path = st.session_state['task_path']
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
     frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
-        
+
+    # 过滤忽略文本
+    ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿"]
+    frame_subtitles_position = {t: [coord for coord in coords if not str_util.is_str_contain_list_strs(coord[2],ignore_text)] for t, coords in frame_subtitles_position.items()}
+
     # 提取所有坐标
     all_coords = [coord for coords in frame_subtitles_position.values() for coord in coords]
 
@@ -488,12 +492,15 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
         most_common_region = most_common_regions[0]  # 如果有多个区域出现次数相同，选择第一个
 
         # 根据统计区域过滤每一帧的字幕区域
+        #frame_positions = {}
         for t, coords in frame_subtitles_position.items():
             frame_coords = []
             for coord in coords:
                 if is_overlap_over_half(((most_common_region[0][0],most_common_region[0][1]),(most_common_region[1][0],most_common_region[1][1])), coord):
                     frame_coords.append(coord)
-            frame_subtitles_position[t] = frame_coords
+            if frame_coords and len(frame_coords) >= 0:
+                #frame_positions[t] = frame_coords
+                frame_subtitles_position[t] = frame_coords
 
         return {
             "left_top_x": most_common_region[0][0],
@@ -502,6 +509,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
             "right_bottom_y": most_common_region[1][1],
             "count": max_count,
             "frame_subtitles_position":frame_subtitles_position
+            #"frame_subtitles_position":frame_positions
         }
     else:
         return None
@@ -522,7 +530,7 @@ def filter_coordinates(coords,min_area:int):
     filter invalid coordinates
     '''
     valid_coords = []
-    for top_left, bottom_right in coords:
+    for top_left, bottom_right,text in coords:
         if is_valid_coordinate(top_left, bottom_right,min_area=min_area):
             valid_coords.append((top_left, bottom_right))
     return valid_coords
@@ -578,7 +586,7 @@ def is_overlap_over_half(base_rect, other_rect):
 
     # 解析基础矩形和其他矩形的坐标
     (base_left, base_top), (base_right, base_bottom) = base_rect
-    (other_left, other_top), (other_right, other_bottom) = other_rect
+    (other_left, other_top), (other_right, other_bottom),text = other_rect
 
     # 计算重叠区域的坐标
     overlap_left = max(base_left, other_left)
@@ -651,11 +659,11 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     
     return frame_copy
 
-def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int]]]]):
+def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]]):
     frame_copy = frame.copy()
 
     # 处理当前帧
-    for top_left, bottom_right in frame_subtitles_position.get(t, []):
+    for top_left, bottom_right,str in frame_subtitles_position.get(t, []):
         # frame_copy = mosaic.apply_perspective_background_color(frame=frame_copy,
         #                                                             x1=top_left[0],
         #                                                             y1=top_left[1],
