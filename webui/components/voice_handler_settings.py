@@ -1,5 +1,5 @@
 from streamlit.delta_generator import DeltaGenerator
-from app.services import voice,subtitle,audio_merger
+from app.services import voice,subtitle,audio
 import streamlit as st
 from app.utils import utils,file_utils
 import os,random
@@ -162,7 +162,7 @@ def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
         out_path = os.path.join(task_path, "edit_voices")
         file_utils.ensure_directory(out_path)
         # save final audio
-        final_audio = audio_merger.merge_audio_files(
+        final_audio = audio.merge_audio_files(
             out_path=out_path, 
             audio_files=audio_files, 
             total_duration=total_duration+1, 

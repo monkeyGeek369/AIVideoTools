@@ -3,7 +3,7 @@ matplotlib.use('Agg')  # 强制使用无头渲染模式
 from moviepy.editor import *
 import numpy as np
 import matplotlib.pyplot as plt
-from app.utils import file_utils
+from app.utils import file_utils,ffmpeg_util,utils
 import gc
 from pydub import AudioSegment
 import cv2,time
@@ -12,6 +12,7 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
 import math
+from loguru import logger
 
 audio_vfx_task_queue = queue.Queue(maxsize=50)
 
@@ -187,4 +188,60 @@ def audio_visualization_effect(video_clip,task_path):
     gc.collect()
     return video.fl(get_frame)
 
+def merge_audio_files(out_path: str, audio_files: list, total_duration: float, subtitle_list: list):
+    """
+    merge audio files into a single audio file with subtitles.
+    """
+    # 检查FFmpeg是否安装
+    if not ffmpeg_util.check_ffmpeg():
+        logger.error("FFmpeg未安装，无法合并音频文件")
+        return None
 
+    # 创建一个空的音频片段
+    final_audio = AudioSegment.silent(duration=total_duration * 1000)  # 总时长以毫秒为单位
+
+    # 遍历脚本中的每个片段
+    for subtitle_item, audio_file in zip(subtitle_list, audio_files):
+        try:
+            # 获取片段信息
+            index, timestamp_str, text = subtitle_item
+            start_time, end_time = timestamp_str.split(' --> ')
+            start_ms = int(utils.time_to_seconds(start_time) * 1000)
+            end_ms = int(utils.time_to_seconds(end_time) * 1000)
+
+            
+            # 计算字幕时间段
+            slot_duration = end_ms - start_ms
+            if slot_duration <= 0:
+                logger.warning(f"无效时间段: {timestamp_str}")
+                continue
+
+
+            # 加载TTS音频文件
+            tts_audio = AudioSegment.from_file(audio_file)
+            
+            # 根据OST设置处理音频
+            final_audio = final_audio.overlay(tts_audio, position=start_ms)
+        except Exception as e:
+            logger.error(f"处理音频文件 {audio_file} 时出错: {str(e)}")
+            continue
+
+    # 保存合并后的音频文件
+    output_audio_path = os.path.join(out_path, "edit_audio.mp3")
+    final_audio.export(output_audio_path, format="mp3")
+    logger.info(f"合并后的音频文件已保存: {output_audio_path}")
+
+    return output_audio_path
+
+def get_audio_from_video(video_path: str, out_path: str):
+    """
+    video_path: for example: /path/to/video.mp4
+    out_path: for example: /path/to/output/audio.wav
+    """
+    audio_clip = AudioFileClip(video_path)
+    fps = audio_clip.fps
+    audio_clip.write_audiofile(
+        filename=out_path,
+        fps=fps
+        )
+    audio_clip.close()
