@@ -103,6 +103,9 @@ def render_voice_preview(tr, voice_name,st_container:DeltaGenerator):
         voice_pitch=float(st.session_state.get('voice_pitch', 1.0)),
         voice_file=audio_file,
         voice_volume=float(st.session_state.get('voice_volume', 1.0)),
+        target_duration=20,
+        max_rate_adjustments=6,
+        max_rate=2.0
     )
 
     # 如果语音文件生成失败，使用默认内容重试
@@ -115,6 +118,9 @@ def render_voice_preview(tr, voice_name,st_container:DeltaGenerator):
             voice_pitch=float(st.session_state.get('voice_pitch', 1.0)),
             voice_file=audio_file,
             voice_volume=float(st.session_state.get('voice_volume', 1.0)),
+            target_duration=20,
+            max_rate_adjustments=6,
+            max_rate=2.0
         )
 
     if sub_maker and os.path.exists(audio_file):

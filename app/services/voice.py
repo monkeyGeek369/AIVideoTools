@@ -9,6 +9,8 @@ import time
 from app.config import config
 from app.utils import utils
 from app.services import audio
+from io import BytesIO
+from pydub import AudioSegment
 
 
 def get_all_azure_voices(filter_locals=None) -> list[str]:
@@ -1020,10 +1022,12 @@ def is_azure_v2_voice(voice_name: str):
         return voice_name.replace("-V2", "").strip()
     return ""
 
-def tts(text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str,voice_volume:float) -> [SubMaker, None]:
+def tts(text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str,voice_volume:float,target_duration: float,
+    max_rate_adjustments: int = 6,
+    max_rate: float = 2.0) -> [SubMaker, None]:
     if is_azure_v2_voice(voice_name):
         return azure_tts_v2(text, voice_name, voice_file)
-    return azure_tts_v1(text, voice_name, voice_rate, voice_pitch, voice_file,voice_volume)
+    return azure_tts_v1(text, voice_name, voice_rate, voice_pitch, voice_file,voice_volume,target_duration,max_rate_adjustments,max_rate)
 
 def convert_rate_to_percent(rate: float) -> str:
     if rate == 1.0:
@@ -1053,21 +1057,28 @@ def convert_pitch_to_percent(rate: float) -> str:
         return f"{percent}Hz"
 
 def azure_tts_v1(
-    text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str,voice_volume:float
+    text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str,voice_volume:float,
+    target_duration: float,
+    max_rate_adjustments: int = 6,
+    max_rate: float = 2.0
 ) -> [SubMaker, None]:
+    # get base params
     voice_name = parse_voice_name(voice_name)
     text = text.strip()
-    rate_str = convert_rate_to_percent(voice_rate)
     volume_str = convert_volume_to_percent(voice_volume)
     pitch_str = convert_pitch_to_percent(voice_pitch)
-    for i in range(3):
+
+    # get current_rate
+    current_rate = voice_rate
+
+    for i in range(max_rate_adjustments):
         try:
             logger.info(f"第 {i+1} 次使用 edge_tts 生成音频")
 
             async def _do() -> tuple[SubMaker, bytes]:
-                communicate = edge_tts.Communicate(text, voice_name, rate=rate_str, pitch=pitch_str,volume=volume_str)
+                communicate = edge_tts.Communicate(text, voice_name, rate=convert_rate_to_percent(current_rate), pitch=pitch_str,volume=volume_str)
                 sub_maker = edge_tts.SubMaker()
-                audio_data = bytes()  # 用于存储音频数据
+                audio_data = bytes()
                 
                 async for chunk in communicate.stream():
                     if chunk["type"] == "audio":
@@ -1078,31 +1089,35 @@ def azure_tts_v1(
                         )
                 return sub_maker, audio_data
 
-            # 判断音频文件是否已存在
+            # judge if the audio file exists
             if os.path.exists(voice_file):
                 logger.info(f"voice file exists, skip tts: {voice_file}")
                 continue
 
-            # 获取音频数据和字幕信息
+            # get audio data
             sub_maker, audio_data = asyncio.run(_do())
             
-            # 验证数据是否有效
+            # judge if the audio data is valid
             if not sub_maker or not sub_maker.subs or not audio_data:
                 logger.warning(f"failed, invalid data generated")
-                if i < 2:
-                    time.sleep(1)
+                time.sleep(1)
                 continue
 
-            # 数据有效，写入文件
+            # get new rate
+            new_rate = get_next_voice_rate(audio_data,current_rate,target_duration,max_rate)
+            if new_rate != current_rate and new_rate - current_rate > 0.01:
+                current_rate = new_rate
+                logger.info(f"new rate: {current_rate}")
+                continue
+            
+            # write audio data to file
             with open(voice_file, "wb") as file:
                 file.write(audio_data)
-
             logger.info(f"completed, output file: {voice_file}")
             return sub_maker
         except Exception as e:
             logger.error(f"生成音频文件时出错: {str(e)}")
-            if i < 2:
-                time.sleep(1)
+            time.sleep(1)
     return None
 
 def azure_tts_v2(text: str, voice_name: str, voice_file: str) -> [SubMaker, None]:
@@ -1221,13 +1236,20 @@ def tts_multiple(out_path:str,subtitle_list: list, voice_name: str, voice_rate: 
             audio_files.append(audio_file)
             continue
 
+        sub_times = timestamp_str.split(" --> ")
+        start_time = utils.time_to_seconds(sub_times[0])
+        end_time = utils.time_to_seconds(sub_times[1])
+        duration = end_time - start_time
         sub_maker = tts(
             text=text,
             voice_name=voice_name,
             voice_rate=voice_rate,
             voice_pitch=voice_pitch,
             voice_file=audio_file,
-            voice_volume=volume
+            voice_volume=volume,
+            target_duration=duration,
+            max_rate_adjustments=6,
+            max_rate=2.0
         )
 
         if sub_maker is None:
@@ -1287,3 +1309,19 @@ def subtitle_to_voice(subtitles:list[tuple[int,str,str]],temp_path:str,voice_nam
         del sub_maker_list
     return final_audio
 
+def get_next_voice_rate(audio_data,current_rate: float, target_duration: float,max_rate: float) -> float:
+    with BytesIO(audio_data) as audio_stream:
+        audio = AudioSegment.from_file(audio_stream, format="mp3")
+        actual_duration = len(audio) / 1000.0
+
+    if actual_duration <= target_duration:
+        return current_rate
+    
+    # get new rate
+    adjustment_factor = actual_duration / target_duration
+    new_rate = current_rate * adjustment_factor
+    
+    # limit new rate
+    new_rate = min(new_rate, max_rate)
+
+    return new_rate
