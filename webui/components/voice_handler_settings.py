@@ -132,52 +132,18 @@ def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
     merged_subtitle_path = os.path.join(edit_subtitles_path, "merged.srt")
     if not os.path.exists(merged_subtitle_path):
         raise Exception(tr("merged_subtitle_not_found"))
-    
     subtitle_texts = subtitle.file_to_subtitles(merged_subtitle_path)
 
-    # get total duration
-    last_timestamp = subtitle_texts[-1][1]
-    end_time = last_timestamp.split(" --> ")[1]
-    total_duration = utils.time_to_seconds(end_time)
-
-    # get audios
-    out_path = os.path.join(task_path, "temp")
+    # subtitle to voice
+    temp_path = os.path.join(task_path, "temp")
+    file_utils.ensure_directory(temp_path)
+    out_path = os.path.join(task_path, "edit_voices")
     file_utils.ensure_directory(out_path)
-    audio_files, sub_maker_list = voice.tts_multiple(
-        out_path=out_path,
-        subtitle_list=subtitle_texts, 
-        voice_name=st.session_state.get('voice_name'),
-        voice_rate=float(st.session_state.get('voice_rate', 1.0)),
-        voice_pitch=float(st.session_state.get('voice_pitch', 1.0)),
-        force_regenerate=True,
-        volume=float(st.session_state.get('voice_volume', 1.0))
-    )
-    
-    if audio_files is None:
-        raise Exception(tr("tts_failed"))
-
-    # merge audios
-    final_audio = None
-    try:
-        out_path = os.path.join(task_path, "edit_voices")
-        file_utils.ensure_directory(out_path)
-        # save final audio
-        final_audio = audio.merge_audio_files(
-            out_path=out_path, 
-            audio_files=audio_files, 
-            total_duration=total_duration+1, 
-            subtitle_list=subtitle_texts
-        )
-    except Exception as e:
-        raise Exception(tr("audio_merge_failed") + " : " + str(e))
-    finally:
-        # remove audio files
-        for audio_file in audio_files:
-            if os.path.exists(audio_file):
-                os.remove(audio_file)
-
-        del audio_files
-        del sub_maker_list
+    final_audio = voice.subtitle_to_voice(subtitles=subtitle_texts,temp_path=temp_path,voice_name=st.session_state.get('voice_name'),
+                      voice_rate=float(st.session_state.get('voice_rate', 1.0)),
+                      voice_pitch=float(st.session_state.get('voice_pitch', 1.0)),
+                      voice_volume=float(st.session_state.get('voice_volume', 1.0)),
+                      out_path=out_path)
 
     # show final audio
     if final_audio is not None:

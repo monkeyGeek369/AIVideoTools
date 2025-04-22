@@ -1,19 +1,14 @@
 import os
-import re
-import json
-import traceback
 import edge_tts
 import asyncio
 from loguru import logger
-from typing import List
 from datetime import datetime
 from xml.sax.saxutils import unescape
-from edge_tts import submaker, SubMaker
-from moviepy.video.tools import subtitles
+from edge_tts import SubMaker
 import time
-
 from app.config import config
 from app.utils import utils
+from app.services import audio
 
 
 def get_all_azure_voices(filter_locals=None) -> list[str]:
@@ -1012,7 +1007,6 @@ Gender: Female
     voices.sort()
     return voices
 
-
 def parse_voice_name(name: str):
     # zh-CN-XiaoyiNeural-Female
     # zh-CN-YunxiNeural-Male
@@ -1020,19 +1014,16 @@ def parse_voice_name(name: str):
     name = name.replace("-Female", "").replace("-Male", "").strip()
     return name
 
-
 def is_azure_v2_voice(voice_name: str):
     voice_name = parse_voice_name(voice_name)
     if voice_name.endswith("-V2"):
         return voice_name.replace("-V2", "").strip()
     return ""
 
-
 def tts(text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str,voice_volume:float) -> [SubMaker, None]:
     if is_azure_v2_voice(voice_name):
         return azure_tts_v2(text, voice_name, voice_file)
     return azure_tts_v1(text, voice_name, voice_rate, voice_pitch, voice_file,voice_volume)
-
 
 def convert_rate_to_percent(rate: float) -> str:
     if rate == 1.0:
@@ -1060,7 +1051,6 @@ def convert_pitch_to_percent(rate: float) -> str:
         return f"+{percent}Hz"
     else:
         return f"{percent}Hz"
-
 
 def azure_tts_v1(
     text: str, voice_name: str, voice_rate: float, voice_pitch: float, voice_file: str,voice_volume:float
@@ -1114,7 +1104,6 @@ def azure_tts_v1(
             if i < 2:
                 time.sleep(1)
     return None
-
 
 def azure_tts_v2(text: str, voice_name: str, voice_file: str) -> [SubMaker, None]:
     voice_name = is_azure_v2_voice(voice_name)
@@ -1202,131 +1191,6 @@ def azure_tts_v2(text: str, voice_name: str, voice_file: str) -> [SubMaker, None
                 time.sleep(3)
     return None
 
-
-def _format_text(text: str) -> str:
-    # text = text.replace("\n", " ")
-    text = text.replace("[", " ")
-    text = text.replace("]", " ")
-    text = text.replace("(", " ")
-    text = text.replace(")", " ")
-    text = text.replace("{", " ")
-    text = text.replace("}", " ")
-    text = text.strip()
-    return text
-
-
-def create_subtitle_from_multiple(text: str, sub_maker_list: List[SubMaker], list_script: List[dict], 
-                                  subtitle_file: str):
-    """
-    根据多个 SubMaker 对象、完整文本和原始脚本创建优化的字幕文件
-    1. 使用原始脚本中的时间戳
-    2. 跳过 OST 为 true 的部分
-    3. 将字幕文件按照标点符号分割成多行
-    4. 根据完整文本分段，保持原文的语句结构
-    5. 生成新的字幕文件，时间戳包含小时单位
-    """
-    text = _format_text(text)
-    sentences = utils.split_string_by_punctuations(text)
-
-    def formatter(idx: int, start_time: str, end_time: str, sub_text: str) -> str:
-        return f"{idx}\n{start_time.replace('.', ',')} --> {end_time.replace('.', ',')}\n{sub_text}\n"
-
-    sub_items = []
-    sub_index = 0
-    sentence_index = 0
-
-    try:
-        sub_maker_index = 0
-        for script_item in list_script:
-            if script_item['OST']:
-                continue
-
-            start_time, end_time = script_item['new_timestamp'].split('-')
-            if sub_maker_index >= len(sub_maker_list):
-                logger.error(f"Sub maker list index out of range: {sub_maker_index}")
-                break
-            sub_maker = sub_maker_list[sub_maker_index]
-            sub_maker_index += 1
-
-            script_duration = utils.time_to_seconds(end_time) - utils.time_to_seconds(start_time)
-            audio_duration = get_audio_duration(sub_maker)
-            time_ratio = script_duration / audio_duration if audio_duration > 0 else 1
-
-            current_sub = ""
-            current_start = None
-            current_end = None
-
-            for offset, sub in zip(sub_maker.offset, sub_maker.subs):
-                sub = unescape(sub).strip()
-                sub_start = utils.seconds_to_time(utils.time_to_seconds(start_time) + offset[0] / 10000000 * time_ratio)
-                sub_end = utils.seconds_to_time(utils.time_to_seconds(start_time) + offset[1] / 10000000 * time_ratio)
-                
-                if current_start is None:
-                    current_start = sub_start
-                current_end = sub_end
-                
-                current_sub += sub
-                
-                # 检查当前累积的字幕是否匹配下一个句子
-                while sentence_index < len(sentences) and sentences[sentence_index] in current_sub:
-                    sub_index += 1
-                    line = formatter(
-                        idx=sub_index,
-                        start_time=current_start,
-                        end_time=current_end,
-                        sub_text=sentences[sentence_index].strip(),
-                    )
-                    sub_items.append(line)
-                    current_sub = current_sub.replace(sentences[sentence_index], "", 1).strip()
-                    current_start = current_end
-                    sentence_index += 1
-
-                # 如果当前字幕长度超过15个字符，也生成一个新的字幕项
-                if len(current_sub) > 15:
-                    sub_index += 1
-                    line = formatter(
-                        idx=sub_index,
-                        start_time=current_start,
-                        end_time=current_end,
-                        sub_text=current_sub.strip(),
-                    )
-                    sub_items.append(line)
-                    current_sub = ""
-                    current_start = current_end
-
-            # 处理剩余的文本
-            if current_sub.strip():
-                sub_index += 1
-                line = formatter(
-                    idx=sub_index,
-                    start_time=current_start,
-                    end_time=current_end,
-                    sub_text=current_sub.strip(),
-                )
-                sub_items.append(line)
-
-        if len(sub_items) == 0:
-            logger.error("No subtitle items generated")
-            return
-
-        with open(subtitle_file, "w", encoding="utf-8") as file:
-            file.write("\n".join(sub_items))
-
-        logger.info(f"completed, subtitle file created: {subtitle_file}")
-    except Exception as e:
-        logger.error(f"failed, error: {str(e)}")
-        traceback.print_exc()
-
-
-def get_audio_duration(sub_maker: submaker.SubMaker):
-    """
-    获取音频时长
-    """
-    if not sub_maker.offset:
-        return 0.0
-    return sub_maker.offset[-1][1] / 10000000
-
-
 def tts_multiple(out_path:str,subtitle_list: list, voice_name: str, voice_rate: float, voice_pitch: float, force_regenerate: bool = True,volume: float = 1.0) -> list:
     """
     根据JSON文件中的多段文本进行TTS转换
@@ -1377,3 +1241,49 @@ def tts_multiple(out_path:str,subtitle_list: list, voice_name: str, voice_rate: 
         logger.info(f"已生成音频文件: {audio_file}")
 
     return audio_files, sub_maker_list
+
+def subtitle_to_voice(subtitles:list[tuple[int,str,str]],temp_path:str,voice_name:str,
+                      voice_rate:float,voice_pitch:float,voice_volume:float,
+                      out_path:str) -> str:
+    # get total duration
+    last_timestamp = subtitles[-1][1]
+    end_time = last_timestamp.split(" --> ")[1]
+    total_duration = utils.time_to_seconds(end_time)
+
+    # get audios
+    audio_files, sub_maker_list = tts_multiple(
+        out_path=temp_path,
+        subtitle_list=subtitles, 
+        voice_name=voice_name,
+        voice_rate=voice_rate,
+        voice_pitch=voice_pitch,
+        force_regenerate=True,
+        volume=voice_volume
+    )
+    
+    if audio_files is None:
+        raise Exception("tts failed, audio_files is None")
+
+    # merge audios
+    final_audio = None
+    try:
+        # save final audio
+        final_audio = audio.merge_audio_files(
+            out_path=out_path,
+            audio_files=audio_files,
+            total_duration=total_duration+1, 
+            subtitle_list=subtitles
+        )
+    except Exception as e:
+        raise Exception("merge audio failed:" + str(e))
+    finally:
+        # remove audio files
+        if audio_files is not None:
+            for audio_file in audio_files:
+                if os.path.exists(audio_file):
+                    os.remove(audio_file)
+
+        del audio_files
+        del sub_maker_list
+    return final_audio
+
