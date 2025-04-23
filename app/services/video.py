@@ -662,14 +662,11 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
 def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]]):
     frame_copy = frame.copy()
 
-    # 处理当前帧
-    for top_left, bottom_right,str in frame_subtitles_position.get(t, []):
-        # frame_copy = mosaic.apply_perspective_background_color(frame=frame_copy,
-        #                                                             x1=top_left[0],
-        #                                                             y1=top_left[1],
-        #                                                             x2=bottom_right[0],
-        #                                                             y2=bottom_right[1],
-        #                                                             extend_factor = 2)
+    positions = frame_subtitles_position.get(t, [])
+    if (positions is None) or len(positions) == 0:
+        logger.warning("frame at {} no subtitle position found".format(t))
+
+    for top_left, bottom_right,str in positions:
         frame_copy = mosaic.telea_mosaic(frame=frame_copy,
                                             x1=top_left[0],
                                             y1=top_left[1],
