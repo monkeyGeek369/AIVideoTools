@@ -481,7 +481,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     frame_subtitles_position = {t: [coord for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
 
     # 提取所有坐标
-    all_coords = [coord for result in frame_subtitles_position.values() for coord in result.get("coordinates")]
+    all_coords = [coord for result in frame_subtitles_position.values() for coord in result]
 
     # 对所有坐标进行过滤
     all_coords = filter_coordinates(all_coords,min_area=min_area)
@@ -499,7 +499,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
         #frame_positions = {}
         for t, result in frame_subtitles_position.items():
             frame_coords = []
-            for coord in result.get("coordinates"):
+            for coord in result:
                 if is_overlap_over_half(((most_common_region[0][0],most_common_region[0][1]),(most_common_region[1][0],most_common_region[1][1])), coord):
                     frame_coords.append(coord)
             if frame_coords and len(frame_coords) >= 0:
@@ -633,6 +633,7 @@ def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositi
     frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
     frame_index_dict = subtitle_position_coord.frame_index_dict
     fps = video_clip.fps
+    st.session_state['index'] = 1
 
     # load video
     return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position,frame_index_dict,fps))
@@ -667,7 +668,7 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
 
 def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]],frame_index_dict:dict[int,float],fps:int):
     frame_copy = frame.copy()
-    index = math.floor(t * fps)+1
+    index = st.session_state.get("index")
 
     positions = frame_subtitles_position.get(t, [])
     if (positions is None) or len(positions) == 0:
@@ -676,6 +677,7 @@ def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[
             logger.warning("frame at {} no subtitle position found".format(t))
         else:
             positions = frame_subtitles_position.get(index_time, [])
+    st.session_state["index"] = index + 1
 
     for top_left, bottom_right,str in positions:
         frame_copy = mosaic.telea_mosaic(frame=frame_copy,

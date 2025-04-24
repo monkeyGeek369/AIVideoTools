@@ -46,7 +46,7 @@ def producer(video_path, tmp_path):
         task_queue.put((frame_count + 1,t,frame_path))
         frame_count += 1
     cap.release()
-    task_queue.put((None,None))
+    task_queue.put((None,None,None))
 
 def consumer():
     """处理单个帧"""
@@ -58,7 +58,7 @@ def consumer():
             index,t,frame_path = task_queue.get()
             coordinates = []
             if frame_path is None:  # 遇到结束标志
-                task_queue.put((None,None))  # 通知其他消费者退出
+                task_queue.put((None,None,None))  # 通知其他消费者退出
                 break
             
             # OCR检测
@@ -77,11 +77,11 @@ def consumer():
                 if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
                     coordinates.append((top_left, bottom_right, text[0] if len(text) >=2 else None))
             
-            result = {
+            coord_result = {
                 "index":index,
                 "coordinates": coordinates
             }
-            thread_local_results[t] = result
+            thread_local_results[t] = coord_result
     except Exception as e:
         print(f"处理帧时发生错误: {str(e)}")
     return thread_local_results
