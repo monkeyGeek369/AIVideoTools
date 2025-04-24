@@ -8,3 +8,4 @@ class SubtitlePositionCoord(BaseModel):
     right_bottom_y:int
     count:int
     frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]]
+    frame_index_dict:dict[int,float]

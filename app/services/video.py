@@ -22,6 +22,7 @@ from app.services import mosaic,paddleocr
 from app.utils import str_util
 import torch
 import streamlit as st
+import math
 
 def wrap_text(text, max_width, font, fontsize=60):
     """
@@ -472,12 +473,15 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
     frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
 
+    # get frame_index_dict
+    frame_index_dict = {int(result.get("index")):t for t,result in frame_subtitles_position.items()}
+
     # 过滤忽略文本
     ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿"]
-    frame_subtitles_position = {t: [coord for coord in coords if not str_util.is_str_contain_list_strs(coord[2],ignore_text)] for t, coords in frame_subtitles_position.items()}
+    frame_subtitles_position = {t: [coord for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
 
     # 提取所有坐标
-    all_coords = [coord for coords in frame_subtitles_position.values() for coord in coords]
+    all_coords = [coord for result in frame_subtitles_position.values() for coord in result.get("coordinates")]
 
     # 对所有坐标进行过滤
     all_coords = filter_coordinates(all_coords,min_area=min_area)
@@ -493,9 +497,9 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
 
         # 根据统计区域过滤每一帧的字幕区域
         #frame_positions = {}
-        for t, coords in frame_subtitles_position.items():
+        for t, result in frame_subtitles_position.items():
             frame_coords = []
-            for coord in coords:
+            for coord in result.get("coordinates"):
                 if is_overlap_over_half(((most_common_region[0][0],most_common_region[0][1]),(most_common_region[1][0],most_common_region[1][1])), coord):
                     frame_coords.append(coord)
             if frame_coords and len(frame_coords) >= 0:
@@ -508,8 +512,8 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
             "right_bottom_x": most_common_region[1][0],
             "right_bottom_y": most_common_region[1][1],
             "count": max_count,
-            "frame_subtitles_position":frame_subtitles_position
-            #"frame_subtitles_position":frame_positions
+            "frame_subtitles_position":frame_subtitles_position,
+            "frame_index_dict":frame_index_dict
         }
     else:
         return None
@@ -627,9 +631,11 @@ def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositi
 
     # get subtitle position
     frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
+    frame_index_dict = subtitle_position_coord.frame_index_dict
+    fps = video_clip.fps
 
     # load video
-    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position))
+    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position,frame_index_dict,fps))
 
 def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     '''
@@ -659,12 +665,17 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     
     return frame_copy
 
-def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]]):
+def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]],frame_index_dict:dict[int,float],fps:int):
     frame_copy = frame.copy()
+    index = math.floor(t * fps)+1
 
     positions = frame_subtitles_position.get(t, [])
     if (positions is None) or len(positions) == 0:
-        logger.warning("frame at {} no subtitle position found".format(t))
+        index_time = frame_index_dict.get(index,None)
+        if index_time is None:
+            logger.warning("frame at {} no subtitle position found".format(t))
+        else:
+            positions = frame_subtitles_position.get(index_time, [])
 
     for top_left, bottom_right,str in positions:
         frame_copy = mosaic.telea_mosaic(frame=frame_copy,

@@ -43,7 +43,7 @@ def producer(video_path, tmp_path):
         t = frame_count / fps
         frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.png")
         cv2.imwrite(frame_path, frame)
-        task_queue.put((t,frame_path))
+        task_queue.put((frame_count + 1,t,frame_path))
         frame_count += 1
     cap.release()
     task_queue.put((None,None))
@@ -55,7 +55,7 @@ def consumer():
 
     try:
         while True:
-            t,frame_path = task_queue.get()
+            index,t,frame_path = task_queue.get()
             coordinates = []
             if frame_path is None:  # 遇到结束标志
                 task_queue.put((None,None))  # 通知其他消费者退出
@@ -77,7 +77,11 @@ def consumer():
                 if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
                     coordinates.append((top_left, bottom_right, text[0] if len(text) >=2 else None))
             
-            thread_local_results[t] = coordinates
+            result = {
+                "index":index,
+                "coordinates": coordinates
+            }
+            thread_local_results[t] = result
     except Exception as e:
         print(f"处理帧时发生错误: {str(e)}")
     return thread_local_results
