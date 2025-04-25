@@ -8,13 +8,14 @@ import os
 
 
 # mac
-video0_path = "/Users/monkeygeek/Downloads/compound_video.mp4"
-image_frame_path = "/Users/monkeygeek/Downloads/tmp/frame"
-mosaic_image_path = "/Users/monkeygeek/Downloads/tmp/mosaic"
-tmp_path = "/Users/monkeygeek/Downloads/tmp"
+# video0_path = "/Users/monkeygeek/Downloads/compound_video.mp4"
+# image_frame_path = "/Users/monkeygeek/Downloads/tmp/frame"
+# mosaic_image_path = "/Users/monkeygeek/Downloads/tmp/mosaic"
+# tmp_path = "/Users/monkeygeek/Downloads/tmp"
 
 # windows
-# video0_path = "F:\download\\test.webm"
+video0_path = "F:\download\compound_video.mp4"
+image_frame_path = "F:\download\\tmp\\frame"
 
 def test_video_frame():
     # first frame to image

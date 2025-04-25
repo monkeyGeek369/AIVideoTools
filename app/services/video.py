@@ -631,10 +631,12 @@ def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositi
 
     # get subtitle position
     frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
-    st.session_state['index'] = 1
+    fps = video_clip.fps
+    left_top = (subtitle_position_coord.left_top_x,subtitle_position_coord.left_top_y)
+    right_bottom = (subtitle_position_coord.right_bottom_x,subtitle_position_coord.right_bottom_y)
 
     # load video
-    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position))
+    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position,fps,left_top,right_bottom))
 
 def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     '''
@@ -664,16 +666,41 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     
     return frame_copy
 
-def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]]):
+def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]],fps:int,left_top:tuple[int,int],right_bottom:tuple[int,int]):
     frame_copy = frame.copy()
-    index = st.session_state.get("index")
+    index = int(round(t * fps))+1
 
     positions = frame_subtitles_position.get(index, [])
     if (positions is None) or len(positions) == 0:
-        logger.warning("frame at {} no subtitle position found".format(index))
-    st.session_state["index"] = index + 1
+        if index + 1 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index + 1, [])
+        elif index - 1 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index - 1, [])
+        elif index + 2 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index + 2, [])
+        elif index - 2 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index - 2, [])
+        elif index + 3 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index + 3, [])
+        elif index - 3 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index - 3, [])
+        elif index + 4 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index + 4, [])
+        elif index - 4 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index - 4, [])
+        elif index + 5 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index + 5, [])
+        elif index - 5 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index - 5, [])
+        elif index + 6 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index + 6, [])
+        elif index - 6 in frame_subtitles_position:
+            positions = frame_subtitles_position.get(index - 6, [])
+        else:
+            positions = [(left_top,right_bottom)]
+            #logger.warning("frame at {} no subtitle position found".format(index))
 
-    for top_left, bottom_right,str in positions:
+    for top_left, bottom_right in positions:
         frame_copy = mosaic.telea_mosaic(frame=frame_copy,
                                             x1=top_left[0],
                                             y1=top_left[1],
