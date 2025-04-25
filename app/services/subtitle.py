@@ -321,7 +321,7 @@ def remove_valid_subtitles_by_ocr(subtitle_path:str):
     if recognize_position_model is None or not recognize_position_model.is_exist:
         print("subtitle position is not exist,not need to remove subtitle")
         return
-    frame_subtitles_position = recognize_position_model.frame_subtitles_position
+    frame_time_text_dict = recognize_position_model.frame_time_text_dict
 
     # 第一步：准确生成OCR时间区间（可能多个不连续区间）格式为[(0，2.36,"你好"，2),(5.12，7.45,"你好呀"，10)]
     def generate_ocr_ranges(positions):
@@ -334,7 +334,7 @@ def remove_valid_subtitles_by_ocr(subtitle_path:str):
         for time in sorted_times: # time: 0.0, 5.12, 7.33, 10.22
             position_results = positions[time] # position_results :[((155,1630),(919,1716),"这个女人"),((155,1630),(919,1716),"这个女人")]
             for position_text in position_results: # position_text: ((155,1630),(919,1716),"这个女人")
-                text = position_text[2] # text: "这个女人"
+                text = position_text # text: "这个女人"
                 time_result = text_regs.get(text,(time,time,0)) # time_result ： (开始时间，结束时间，文本出现次数)
 
                 # update time
@@ -353,7 +353,7 @@ def remove_valid_subtitles_by_ocr(subtitle_path:str):
 
         return ranges
 
-    ocr_time_ranges = generate_ocr_ranges(frame_subtitles_position)
+    ocr_time_ranges = generate_ocr_ranges(frame_time_text_dict)
 
     # 第二步：处理字幕文件，格式为
     # {

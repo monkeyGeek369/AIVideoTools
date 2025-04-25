@@ -8,7 +8,7 @@ import os
 
 
 # mac
-video0_path = "/Users/monkeygeek/Downloads/test.webm"
+video0_path = "/Users/monkeygeek/Downloads/compound_video.mp4"
 image_frame_path = "/Users/monkeygeek/Downloads/tmp/frame"
 mosaic_image_path = "/Users/monkeygeek/Downloads/tmp/mosaic"
 tmp_path = "/Users/monkeygeek/Downloads/tmp"
@@ -19,8 +19,10 @@ tmp_path = "/Users/monkeygeek/Downloads/tmp"
 def test_video_frame():
     # first frame to image
     clip = VideoFileClip(video0_path)
+    index = 1
     for t, frame in clip.iter_frames(with_times=True):
-        cv2.imwrite(image_frame_path + f"/{t:.2f}s.png", frame)
+        cv2.imwrite(image_frame_path + f"/{index}.png", frame)
+        index += 1
 
 def test_mosaic_telea():
     # get all frames
@@ -82,6 +84,6 @@ def test_mosaic_navier():
         cv2.imwrite(save_path, result)
 
 if __name__ == "__main__":
-    #test_video_frame()
+    test_video_frame()
     #test_mosaic_telea()
-    test_mosaic_navier()
+    #test_mosaic_navier()

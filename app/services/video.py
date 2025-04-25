@@ -472,13 +472,13 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     task_path = st.session_state['task_path']
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
     frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
+    ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿"]
 
-    # get frame_index_dict
-    frame_index_dict = {int(result.get("index")):t for t,result in frame_subtitles_position.items()}
+    # get frame_time_text_dict
+    frame_time_text_dict = {t: [coord[2] for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
 
     # 过滤忽略文本
-    ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿"]
-    frame_subtitles_position = {t: [coord for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
+    frame_subtitles_position = {result.get("index"): [(coord[0], coord[1]) for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
 
     # 提取所有坐标
     all_coords = [coord for result in frame_subtitles_position.values() for coord in result]
@@ -497,14 +497,14 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
 
         # 根据统计区域过滤每一帧的字幕区域
         #frame_positions = {}
-        for t, result in frame_subtitles_position.items():
+        for index, position in frame_subtitles_position.items():
             frame_coords = []
-            for coord in result:
+            for coord in position:
                 if is_overlap_over_half(((most_common_region[0][0],most_common_region[0][1]),(most_common_region[1][0],most_common_region[1][1])), coord):
-                    frame_coords.append(coord)
+                    frame_coords.append((coord[0], coord[1]))
             if frame_coords and len(frame_coords) >= 0:
                 #frame_positions[t] = frame_coords
-                frame_subtitles_position[t] = frame_coords
+                frame_subtitles_position[index] = frame_coords
 
         return {
             "left_top_x": most_common_region[0][0],
@@ -513,7 +513,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
             "right_bottom_y": most_common_region[1][1],
             "count": max_count,
             "frame_subtitles_position":frame_subtitles_position,
-            "frame_index_dict":frame_index_dict
+            "frame_time_text_dict":frame_time_text_dict
         }
     else:
         return None
@@ -534,7 +534,7 @@ def filter_coordinates(coords,min_area:int):
     filter invalid coordinates
     '''
     valid_coords = []
-    for top_left, bottom_right,text in coords:
+    for top_left, bottom_right in coords:
         if is_valid_coordinate(top_left, bottom_right,min_area=min_area):
             valid_coords.append((top_left, bottom_right))
     return valid_coords
@@ -590,7 +590,7 @@ def is_overlap_over_half(base_rect, other_rect):
 
     # 解析基础矩形和其他矩形的坐标
     (base_left, base_top), (base_right, base_bottom) = base_rect
-    (other_left, other_top), (other_right, other_bottom),text = other_rect
+    (other_left, other_top), (other_right, other_bottom) = other_rect
 
     # 计算重叠区域的坐标
     overlap_left = max(base_left, other_left)
@@ -631,12 +631,10 @@ def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositi
 
     # get subtitle position
     frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
-    frame_index_dict = subtitle_position_coord.frame_index_dict
-    fps = video_clip.fps
     st.session_state['index'] = 1
 
     # load video
-    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position,frame_index_dict,fps))
+    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position))
 
 def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     '''
@@ -666,17 +664,13 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     
     return frame_copy
 
-def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]],frame_index_dict:dict[int,float],fps:int):
+def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]]):
     frame_copy = frame.copy()
     index = st.session_state.get("index")
 
-    positions = frame_subtitles_position.get(t, [])
+    positions = frame_subtitles_position.get(index, [])
     if (positions is None) or len(positions) == 0:
-        index_time = frame_index_dict.get(index,None)
-        if index_time is None:
-            logger.warning("frame at {} no subtitle position found".format(t))
-        else:
-            positions = frame_subtitles_position.get(index_time, [])
+        logger.warning("frame at {} no subtitle position found".format(index))
     st.session_state["index"] = index + 1
 
     for top_left, bottom_right,str in positions:
