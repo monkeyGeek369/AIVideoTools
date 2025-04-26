@@ -35,16 +35,15 @@ def producer(video_path, tmp_path):
     os.makedirs(tmp_path, exist_ok=True)    
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
-    frame_count = 0
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
+        frame_count = int(cap.get(cv2.CAP_PROP_POS_FRAMES))  # 当前帧位置
         t = frame_count / fps
         frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.png")
         cv2.imwrite(frame_path, frame)
-        task_queue.put((frame_count + 1,t,frame_path))
-        frame_count += 1
+        task_queue.put((frame_count,t,frame_path))
     cap.release()
     task_queue.put((None,None,None))
 
