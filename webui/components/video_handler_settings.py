@@ -183,7 +183,9 @@ def video_title_polish():
 5、整体字数绝对不能超过100字.
 ''',
                                                 content=st.session_state['first_video_name'],
-                                                temperature=llm_temperature)
+                                                temperature=llm_temperature,
+                                                invalid_str="-->",
+                                                            retry_count=3)
     if llm_result:
         st.session_state['video_polish_name'] = llm_result
 
