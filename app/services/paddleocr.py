@@ -113,6 +113,11 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
         
     # 删除临时帧文件
     shutil.rmtree(frame_tmp_path)
+
+    # clean up
+    global paddle_ocr
+    paddle_ocr = None
+    task_queue = None
     paddle.device.cuda.empty_cache()
 
     return frame_coordinates
