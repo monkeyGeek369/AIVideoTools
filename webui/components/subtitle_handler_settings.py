@@ -123,7 +123,7 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
                                                             prompt=llm_prompt,
                                                             content=subtitle_content,
                                                             temperature=llm_temperature,
-                                                            invalid_str="-->",
+                                                            invalid_str=None,
                                                             retry_count=3)
             else:
                 llm_result = subtitle_content

@@ -18,7 +18,7 @@ def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:st
             )
 
             result = completion.choices[0].message.content
-            if invalid_str in result:
+            if invalid_str is not None and invalid_str in result:
                 raise Exception(f"invalid_str: {invalid_str} in result: {result}")
 
             return result
