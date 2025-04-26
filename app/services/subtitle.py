@@ -332,8 +332,8 @@ def remove_valid_subtitles_by_ocr(subtitle_path:str):
         # get text regs
         text_regs = {} # text_regs: {"这个女人"：(开始时间，结束时间，文本出现次数)}
         for time in sorted_times: # time: 0.0, 5.12, 7.33, 10.22
-            position_results = positions[time] # position_results :[((155,1630),(919,1716),"这个女人"),((155,1630),(919,1716),"这个女人")]
-            for position_text in position_results: # position_text: ((155,1630),(919,1716),"这个女人")
+            position_results = positions[time] # position_results :["这个女人","这个女人"]
+            for position_text in position_results: # position_text: "这个女人"
                 text = position_text # text: "这个女人"
                 time_result = text_regs.get(text,(time,time,0)) # time_result ： (开始时间，结束时间，文本出现次数)
 

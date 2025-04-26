@@ -7,5 +7,5 @@ class SubtitlePositionCoord(BaseModel):
     right_bottom_x:int
     right_bottom_y:int
     count:int
-    frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int]]]]
+    frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int],float]]]
     frame_time_text_dict:dict[float,list[str]]

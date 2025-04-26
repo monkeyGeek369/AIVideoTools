@@ -22,7 +22,7 @@ from app.services import mosaic,paddleocr
 from app.utils import str_util
 import torch
 import streamlit as st
-import math
+import math,cv2
 
 def wrap_text(text, max_width, font, fontsize=60):
     """
@@ -496,14 +496,13 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
         most_common_region = most_common_regions[0]  # 如果有多个区域出现次数相同，选择第一个
 
         # 根据统计区域过滤每一帧的字幕区域
-        #frame_positions = {}
         for index, position in frame_subtitles_position.items():
             frame_coords = []
             for coord in position:
-                if is_overlap_over_half(((most_common_region[0][0],most_common_region[0][1]),(most_common_region[1][0],most_common_region[1][1])), coord):
-                    frame_coords.append((coord[0], coord[1]))
+                frame_coords.append((coord[0], coord[1],(coord[1][0] - coord[0][0])*(coord[1][1] - coord[0][1])))
+                # if is_overlap_over_half(((most_common_region[0][0],most_common_region[0][1]),(most_common_region[1][0],most_common_region[1][1])), coord):
+                #     frame_coords.append((coord[0], coord[1]))
             if frame_coords and len(frame_coords) >= 0:
-                #frame_positions[t] = frame_coords
                 frame_subtitles_position[index] = frame_coords
 
         return {
@@ -666,48 +665,51 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     
     return frame_copy
 
-def make_frame_processor(frame,t:float,frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int],str]]],fps:int,left_top:tuple[int,int],right_bottom:tuple[int,int]):
+def make_frame_processor(frame,t:float,frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int],float]]],fps:int,left_top:tuple[int,int],right_bottom:tuple[int,int]):
     frame_copy = frame.copy()
     index = int(round(t * fps))+1
+    
+    # image_frame_path = "F:\download\\tmp\\frame"
+    # cv2.imwrite(image_frame_path + f"/{index}.png", frame_copy)
+    # if index == 170:
+    #     print(index)
 
-    positions = frame_subtitles_position.get(index, [])
-    if (positions is None) or len(positions) == 0:
-        if index + 1 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index + 1, [])
-        elif index - 1 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index - 1, [])
-        elif index + 2 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index + 2, [])
-        elif index - 2 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index - 2, [])
-        elif index + 3 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index + 3, [])
-        elif index - 3 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index - 3, [])
-        elif index + 4 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index + 4, [])
-        elif index - 4 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index - 4, [])
-        elif index + 5 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index + 5, [])
-        elif index - 5 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index - 5, [])
-        elif index + 6 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index + 6, [])
-        elif index - 6 in frame_subtitles_position:
-            positions = frame_subtitles_position.get(index - 6, [])
-        else:
-            positions = [(left_top,right_bottom)]
-            #logger.warning("frame at {} no subtitle position found".format(index))
+    positions = get_real_subtitle_position(index,3,frame_subtitles_position)
 
-    for top_left, bottom_right in positions:
+    for top_left, bottom_right,area in positions:
         frame_copy = mosaic.telea_mosaic(frame=frame_copy,
                                             x1=top_left[0],
                                             y1=top_left[1],
                                             x2=bottom_right[0],
                                             y2=bottom_right[1])
+    
+    #cv2.imwrite(image_frame_path + f"/{index}-new.png", frame_copy)
 
     return frame_copy
+
+def get_real_subtitle_position(start_index:int,float_num:int,frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int],float]]]):
+    positions = frame_subtitles_position.get(start_index, [])
+    area = sum(item[2] for item in positions)
+    if area > 0:
+        return positions
+
+    for num in range(float_num):
+        current_index = num + 1
+
+        # up
+        up_positions = frame_subtitles_position.get(start_index + current_index,[])
+        up_area = sum(item[2] for item in up_positions)
+        if up_area > area:
+            positions = up_positions
+            area = up_area
+        # down
+        down_positions = frame_subtitles_position.get(start_index - current_index,[])
+        down_area = sum(item[2] for item in down_positions)
+        if down_area > area:
+            positions = down_positions
+            area = down_area
+    
+    return positions
 
 def generate_video_by_images(video_size,image_folder, fps=24, duration=10,last_frame_duration=3):
     image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) 
