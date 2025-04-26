@@ -82,11 +82,12 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         
         # voice
         if voice_check:
-            edit_voice_path = st.session_state['edit_voice_path']
+            edit_voice_path = st.session_state.get("edit_voice_path",None)
             if edit_voice_path is None or os.path.exists(edit_voice_path) is False:
-                raise Exception(tr("edit_voice_not_found"))
-            voice_clip = AudioFileClip(edit_voice_path)
-            audio_clips.append(voice_clip)
+                logger.warning(tr("edit_voice_not_found"))
+            else:
+                voice_clip = AudioFileClip(edit_voice_path)
+                audio_clips.append(voice_clip)
 
         # end_bless
         if end_bless_check:
@@ -97,8 +98,6 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         subtitle_clips = []
         if subtitle_check:
             video_clip,subtitle_clips = get_subtitle_clips(video_clip)
-            if subtitle_clips is None or len(subtitle_clips) == 0:
-                raise Exception(tr("subtitle_info_not_found"))
 
         # get save path
         compound_videos_path = os.path.join(task_path, "compound_videos")
@@ -281,7 +280,6 @@ def get_subtitle_params():
 
 def get_subtitle_clips(video_clip) -> tuple:
     # get subtitle file
-    subtitle_path = st.session_state['edit_subtitle_path']
     subtitle_params = get_subtitle_params()
     font_path = utils.font_dir(subtitle_params['font_name'])
     if platform.system() == 'Windows':
@@ -300,8 +298,10 @@ def get_subtitle_clips(video_clip) -> tuple:
         result_clip = video.video_subtitle_mosaic_auto(video_clip=video_clip,subtitle_position_coord=recognize_position_model)
 
     # base check
-    if not os.path.exists(subtitle_path):
-        raise Exception(f"subtitle file not found: {subtitle_path}")
+    subtitle_path = st.session_state.get("edit_subtitle_path",None)
+    if subtitle_path is None or not os.path.exists(subtitle_path):
+        logger.warning(f"subtitle file not found")
+        return (result_clip,[])
     if not os.path.exists(font_path):
         raise Exception(f"font file not found: {font_path}")
 

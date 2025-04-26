@@ -1,23 +1,34 @@
 from openai import OpenAI
 import os
+from loguru import logger
 # 设置 no_proxy 环境变量，使本地请求不经过代理
 os.environ['no_proxy'] = '127.0.0.1,localhost'
 
-def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float) -> str:
-    client = OpenAI(base_url=base_url, api_key=api_key)
-    completion = client.chat.completions.create(
-        model=model,
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": content},
-        ],
-        temperature=temperature
-    )
+def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float,invalid_str:str,retry_count:int) -> str:
+    while retry_count > 0:
+        try:
+            client = OpenAI(base_url=base_url, api_key=api_key)
+            completion = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": content},
+                ],
+                temperature=temperature
+            )
 
-    result = completion.choices[0].message.content
-    client.close()
-    del client
-    return result
+            result = completion.choices[0].message.content
+            if invalid_str in result:
+                raise Exception(f"invalid_str: {invalid_str} in result: {result}")
+
+            return result
+        except Exception as e:
+            logger.warning(f"chat_single_content error: {e}")
+        finally:
+            retry_count -= 1
+            if client is not None:
+                client.close()
+                del client            
 
 def check_llm_status(base_url:str,api_key:str,model:str) -> bool:
     client = None

@@ -6,6 +6,7 @@ from app.services import localhost_llm
 from app.models.file_info import LocalFileInfo
 import pysrt
 from moviepy.editor import VideoFileClip
+from loguru import logger
 
 
 
@@ -90,8 +91,9 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
                         container_dict:dict[str,DeltaGenerator],
                         is_use_llm:bool=True):
     # check subtitles
-    if len(material_subtitles) == 0:
-        raise Exception(tr("material_subtitles_empty"))
+    if material_subtitles is None or len(material_subtitles) == 0:
+        logger.warning(tr("material_subtitles_empty"))
+        return
     if len(material_subtitles) != len(material_videos):
         raise ValueError(tr("material_subtitles_video_count_not_match"))
 
@@ -120,7 +122,9 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
                                                             model=llm_model,
                                                             prompt=llm_prompt,
                                                             content=subtitle_content,
-                                                            temperature=llm_temperature)
+                                                            temperature=llm_temperature,
+                                                            invalid_str="-->",
+                                                            retry_count=3)
             else:
                 llm_result = subtitle_content
 

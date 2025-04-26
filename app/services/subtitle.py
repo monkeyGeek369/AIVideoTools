@@ -404,9 +404,14 @@ def remove_valid_subtitles_by_ocr(subtitle_path:str):
         output_content.append(utils.text_to_srt(new_idx, sub['text'], sub['start'], sub['end']))
 
     # 写回文件
-    sub_item = "\n".join(output_content) + "\n"
-    with open(subtitle_path, "w", encoding="utf-8") as f:
-        f.write(sub_item)
-    print(f"字幕清理完成：原始字幕 {len(subtitle_blocks)} 条，保留 {len(valid_subtitles)} 条")
+    if  output_content is None or len(output_content) == 0:
+        # delete file
+        os.remove(subtitle_path)
+        print(f"字幕清理完成：原始字幕 {len(subtitle_blocks)} 条，保留 0 条,已删除文件：{subtitle_path}")
+    else:
+        sub_item = "\n".join(output_content) + "\n"
+        with open(subtitle_path, "w", encoding="utf-8") as f:
+            f.write(sub_item)
+        print(f"字幕清理完成：原始字幕 {len(subtitle_blocks)} 条，保留 {len(valid_subtitles)} 条")
     
 

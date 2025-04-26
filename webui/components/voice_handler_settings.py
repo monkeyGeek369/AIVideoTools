@@ -4,6 +4,7 @@ import streamlit as st
 from app.utils import utils,file_utils
 import os,random
 import secrets
+from loguru import logger
 
 
 def render_voice_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
@@ -137,7 +138,8 @@ def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
     file_utils.ensure_directory(edit_subtitles_path)
     merged_subtitle_path = os.path.join(edit_subtitles_path, "merged.srt")
     if not os.path.exists(merged_subtitle_path):
-        raise Exception(tr("merged_subtitle_not_found"))
+        logger.warning(tr("merged_subtitle_not_found"))
+        return
     subtitle_texts = subtitle.file_to_subtitles(merged_subtitle_path)
 
     # subtitle to voice
