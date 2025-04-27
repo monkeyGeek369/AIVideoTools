@@ -1,34 +1,45 @@
 from openai import OpenAI
 import os
 from loguru import logger
+import json
 # 设置 no_proxy 环境变量，使本地请求不经过代理
 os.environ['no_proxy'] = '127.0.0.1,localhost'
 
+def base_single_call_llm(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float) -> str:
+    result = None
+    try:
+        client = OpenAI(base_url=base_url, api_key=api_key)
+        completion = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": content},
+            ],
+            temperature=temperature
+        )
+
+        result = completion.choices[0].message.content
+        if result is None or len(result) == 0 or len(result.strip()) == 0:
+            return None
+    except Exception as e:
+        result = None
+        logger.warning(f"base single call llm error: {e}")
+    finally:
+        if client is not None:
+            client.close()
+            del client    
+    return result
+
 def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float,invalid_str:str,retry_count:int) -> str:
     while retry_count > 0:
-        try:
-            client = OpenAI(base_url=base_url, api_key=api_key)
-            completion = client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": content},
-                ],
-                temperature=temperature
-            )
-
-            result = completion.choices[0].message.content
-            if invalid_str is not None and invalid_str in result:
-                raise Exception(f"invalid_str: {invalid_str} in result: {result}")
-
-            return result
-        except Exception as e:
-            logger.warning(f"chat_single_content error: {e}")
-        finally:
-            retry_count -= 1
-            if client is not None:
-                client.close()
-                del client            
+        retry_count -= 1
+        result = base_single_call_llm(base_url,api_key,model,prompt,content,temperature)
+        if result is None:
+            continue
+        if invalid_str is not None and invalid_str in result:
+            continue
+        return result
+    return None
 
 def check_llm_status(base_url:str,api_key:str,model:str) -> bool:
     client = None
@@ -50,6 +61,24 @@ def check_llm_status(base_url:str,api_key:str,model:str) -> bool:
             client.close()
             del client
 
+def call_llm_get_list(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float,retry_count:int) -> list[dict]:
+    while retry_count > 0:
+        retry_count -= 1
+        result = base_single_call_llm(base_url,api_key,model,prompt,content,temperature)
+        if result is None:
+            continue
+        try:
+            # result to list[dict]
+            list_dict = json.loads(result)
+            if list_dict is None or len(list_dict) == 0:
+                continue
+            if not isinstance(list_dict, list):
+                continue
+            return list_dict
+        except Exception as e:
+            logger.warning(f"call llm get list error: {e}")
+            continue
+    return None
 
 if __name__ == "__main__":
     content = """

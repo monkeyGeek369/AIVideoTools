@@ -404,4 +404,17 @@ def remove_valid_subtitles_by_ocr(subtitle_path:str):
             f.write(sub_item)
         print(f"字幕清理完成：原始字幕 {len(subtitle_blocks)} 条，保留 {len(valid_subtitles)} 条")
     
+def list_to_srt_str(subtitles:list[dict])-> str:
+    if subtitles is None or len(subtitles) == 0:
+        return None
+    result = None
+    for sub in subtitles:
+        content = f"{str(sub['index'])}\n{sub['timerange']}\n{sub['text']}\n\n"
+        if result is None:
+            result = content
+        else:
+            result = result + content
+    return result
+
+
 

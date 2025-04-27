@@ -2,7 +2,7 @@ from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
 import os
 from app.utils import file_utils,utils
-from app.services import localhost_llm
+from app.services import localhost_llm,subtitle
 from app.models.file_info import LocalFileInfo
 import pysrt
 from moviepy.editor import VideoFileClip
@@ -144,14 +144,16 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
             # llm process
             llm_result = None
             if is_use_llm:
-                llm_result = localhost_llm.chat_single_content(base_url=llm_url,
+                llm_result_list = localhost_llm.call_llm_get_list(base_url=llm_url,
                                                             api_key=llm_api_key,
                                                             model=llm_model,
                                                             prompt=llm_prompt,
                                                             content=subtitle_content,
                                                             temperature=llm_temperature,
-                                                            invalid_str=None,
                                                             retry_count=3)
+                if llm_result_list is None or len(llm_result_list) == 0:
+                    raise ValueError(tr("llm_result_empty"))
+                llm_result = subtitle.list_to_srt_str(llm_result_list)
             else:
                 llm_result = subtitle_content
 
