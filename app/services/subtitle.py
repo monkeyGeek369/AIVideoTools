@@ -19,16 +19,6 @@ device = config.whisper.get("device", "cpu")
 compute_type = config.whisper.get("compute_type", "int8")
 
 def create(audio_file, subtitle_file: str = ""):
-    """
-    为给定的音频文件创建字幕文件。
-
-    参数:
-    - audio_file: 音频文件的路径。
-    - subtitle_file: 字幕文件的输出路径（可选）。如果未提供，将根据音频文件的路径生成字幕文件。
-
-    返回:
-    无返回值，但会在指定路径生成字幕文件。
-    """
     global device, compute_type
     model = None
 
