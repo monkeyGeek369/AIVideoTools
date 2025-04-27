@@ -41,72 +41,13 @@ def render_subtitle_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     material_videos = file_utils.get_file_list(directory=material_videos_path,sort_by="name")
 
     # ai handler
+    subtitle_prompt = os.path.join(utils.root_dir(), "app","config","subtitle_prompt.md")
+    with open(subtitle_prompt, 'r', encoding='utf-8') as f:
+        md_content = f.read()
     llm_url = ai_container.text_input(label=tr("base_url"),key="llm_url",value="http://localhost:1234/v1")
     llm_api_key = ai_container.text_input(label=tr("api_key"),key="llm_api_key",value="lm-studio")
     llm_model = ai_container.text_input(label=tr("model"),key="llm_model",value="qwen2.5-14b-instruct")
-    llm_prompt = ai_container.text_area(label=tr("prompt"),key="llm_prompt",value="""
-# 一、背景信息
-
-你现在是一名中文视频字幕处理专家，需要处理的中文字幕格式参考给定的字幕案例.
-
-### 1.1、字幕案例
-
-```
-[
-  {
-    "index": 1,
-    "timerange": "00:00:00,000 --> 00:00:02,920",
-    "text": "救了一只没妈的熊宝宝"
-  },
-  {
-    "index": 2,
-    "timerange": "00:00:02,920 --> 00:00:03,560",
-    "text": "他们给它喂奶并照顾它直到它恢复健康"
-  },
-  {
-    "index": 3,
-    "timerange": "00:00:03,600 --> 00:00:05,470",
-    "text": "这是一段温暖人心的故事情节"
-  }
-]
-```
-
-### 1.2、字幕案例格式说明
-
-1. 字幕信息为list列表对象
-2. 列表中每一个组成对象称为“一条字幕”
-3. 每“一条字幕”都由三部分组成,即index“序号”、timerange“字幕时间范围”、text“字幕文本内容”
-4. index: 从1开始的连续自然数序列,即第一条字幕的index为1,第二条字幕的index为2...以此类推
-5. timerange: 字幕的持续时间字符串
-6. text: 字幕的文本信息
-
-
-
-# 二、任务要求
-
-### 2.1、要求描述
-
-1. 现在需要你明确自己的角色定位
-2. 理解“背景信息”中的字幕格式说明,理解字幕的组成结构
-3. 当给到你新的字幕数据后需要按照“2.2、要求细节步骤”进行处理
-4. 将处理后的字幕完整输出
-
-
-
-### 2.2、要求细节步骤
-
-1. 每一条字幕中的“index”、“timerange”无需任何变动
-2. 如果存在“text”内容不符合上下文语意，或者错别字严重的字幕，需要对当前字幕进行删除
-3. 如果存在“index”重复或“timerange”重复或“text”重复的字幕,则必须对当前字幕进行删除
-4. 针对剩余的字幕中包含的“text”进行改写
-5. 改写“text”时对明显不符合上下文语意的错别字进行修正
-6. 改写“text”时对其中的名词、主语存在不符合语意的情形进行改写或删除等操作
-7. 改写后的“text”要与原来的“text”语意相同但文字要有差异，且字数一定不能超过原字数
-8. 改写后的“text”禁止包含标点符号，可以用空格代替
-9. 一定要保证第一个字幕中的“index”一定是1，后续的每一个字幕中的“index”一定是前一个的index数值加上1的正整数，不能是None，且不能重复，即index一定是从1开始的连续自然数序列
-10. 处理后的字幕数据需要严格遵守1.2中规定的字幕格式，即每一个字幕必须由“index”、“timerange”、“text”三部分组成
-11. 输出结果需要保证为字幕list
-""")
+    llm_prompt = ai_container.text_area(label=tr("prompt"),key="llm_prompt",value=md_content)
     llm_temperature = ai_container.text_input(label=tr("temperature"),key="llm_temperature",value="0.7")
 
     ai_btn_container = ai_container.container(border=True)
