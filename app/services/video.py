@@ -667,7 +667,7 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
 
 def make_frame_processor(frame,t:float,frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int],float]]],fps:int,left_top:tuple[int,int],right_bottom:tuple[int,int]):
     frame_copy = frame.copy()
-    index = int(round(t * fps))
+    index = int(np.round(t * fps))
     
     # image_frame_path = "F:\download\\tmp\\frame"
     # cv2.imwrite(image_frame_path + f"/{index}.png", frame_copy)

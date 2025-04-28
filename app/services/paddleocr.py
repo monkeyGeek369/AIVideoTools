@@ -36,10 +36,10 @@ def producer(video_path, tmp_path):
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS)
     while cap.isOpened():
+        frame_count = int(cap.get(cv2.CAP_PROP_POS_FRAMES))  # 当前帧位置
         ret, frame = cap.read()
         if not ret:
             break
-        frame_count = int(cap.get(cv2.CAP_PROP_POS_FRAMES))  # 当前帧位置
         t = frame_count / fps
         frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.png")
         cv2.imwrite(frame_path, frame)
