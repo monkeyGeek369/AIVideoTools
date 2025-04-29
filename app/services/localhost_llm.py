@@ -68,6 +68,14 @@ def call_llm_get_list(base_url:str,api_key:str,model:str,prompt:str,content:str,
         if result is None:
             continue
         try:
+            logger.info(f"call llm get list result: {result}")
+            # check think
+            if "</think>" in result:
+                ret_list = result.split("</think>")
+                if len(ret_list) < 2:
+                    continue
+                result = ret_list[1].strip()
+
             # result to list[dict]
             list_dict = json.loads(result)
             if list_dict is None or len(list_dict) == 0:

@@ -47,7 +47,7 @@ def render_subtitle_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         md_content = f.read()
     llm_url = ai_container.text_input(label=tr("base_url"),key="llm_url",value="http://localhost:1234/v1")
     llm_api_key = ai_container.text_input(label=tr("api_key"),key="llm_api_key",value="lm-studio")
-    llm_model = ai_container.text_input(label=tr("model"),key="llm_model",value="qwen2.5-14b-instruct")
+    llm_model = ai_container.text_input(label=tr("model"),key="llm_model",value="qwen3-14b")
     llm_prompt = ai_container.text_area(label=tr("prompt"),key="llm_prompt",value=md_content)
     llm_temperature = ai_container.text_input(label=tr("temperature"),key="llm_temperature",value="0.7")
 
@@ -109,11 +109,15 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
             # llm process
             llm_result = None
             if is_use_llm:
+                llm_content = {
+                    "title":subtitle_info.name,
+                    "subtitles":subtitle_list
+                }
                 llm_result_list = localhost_llm.call_llm_get_list(base_url=llm_url,
                                                             api_key=llm_api_key,
                                                             model=llm_model,
                                                             prompt=llm_prompt,
-                                                            content=json.dumps(subtitle_list),
+                                                            content=json.dumps(llm_content),
                                                             temperature=llm_temperature,
                                                             retry_count=3)
                 if llm_result_list is None or len(llm_result_list) == 0:
