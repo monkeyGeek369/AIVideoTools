@@ -117,7 +117,7 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
                                                             api_key=llm_api_key,
                                                             model=llm_model,
                                                             prompt=llm_prompt,
-                                                            content=json.dumps(llm_content),
+                                                            content=json.dumps(llm_content,ensure_ascii=False),
                                                             temperature=llm_temperature,
                                                             retry_count=3)
                 if llm_result_list is None or len(llm_result_list) == 0:
