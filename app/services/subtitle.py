@@ -416,5 +416,10 @@ def list_to_srt_str(subtitles:list[dict])-> str:
             result = result + content
     return result
 
+def str_to_list(file_path: str) -> list[dict]:
+    sub_tumples = file_to_subtitles(filename=file_path)
+    if sub_tumples is None or len(sub_tumples) == 0:
+        return None
+    return [{"index":sub[0],"timerange":sub[1],"text":sub[2]} for sub in sub_tumples]
 
 

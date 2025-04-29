@@ -7,6 +7,7 @@ from app.models.file_info import LocalFileInfo
 import pysrt
 from moviepy.editor import VideoFileClip
 from loguru import logger
+import json
 
 
 
@@ -103,9 +104,7 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
             video_clips.append(video_clip)
 
             # subtitle content
-            subtitle_content = None
-            with open(subtitle_info.path, 'r', encoding='utf-8') as f:
-                subtitle_content = f.read()
+            subtitle_list = subtitle.str_to_list(subtitle_info.path)
 
             # llm process
             llm_result = None
@@ -114,14 +113,14 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
                                                             api_key=llm_api_key,
                                                             model=llm_model,
                                                             prompt=llm_prompt,
-                                                            content=subtitle_content,
+                                                            content=json.dumps(subtitle_list),
                                                             temperature=llm_temperature,
                                                             retry_count=3)
                 if llm_result_list is None or len(llm_result_list) == 0:
                     raise ValueError(tr("llm_result_empty"))
                 llm_result = subtitle.list_to_srt_str(llm_result_list)
             else:
-                llm_result = subtitle_content
+                llm_result = subtitle.list_to_srt_str(subtitle_content)
 
             # subtitle process
             if i == 0:
@@ -135,11 +134,6 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
 
             # add duration
             accumulated_duration += video_clip.duration
-
-        # merge subtitle time interval
-        # for i, sub in enumerate(merged_subs):
-        #     if i != 0:
-        #         sub.start = sub.start + pysrt.SubRipTime(milliseconds=20)
 
         # merge subtitle path
         task_path = st.session_state['task_path']
