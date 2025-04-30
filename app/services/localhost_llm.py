@@ -30,7 +30,7 @@ def base_single_call_llm(base_url:str,api_key:str,model:str,prompt:str,content:s
             del client    
     return result
 
-def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float,invalid_str:str,retry_count:int) -> str:
+def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float,invalid_str:str,retry_count:int,is_remove_thinking:bool) -> str:
     while retry_count > 0:
         retry_count -= 1
         result = base_single_call_llm(base_url,api_key,model,prompt,content,temperature)
@@ -38,6 +38,14 @@ def chat_single_content(base_url:str,api_key:str,model:str,prompt:str,content:st
             continue
         if invalid_str is not None and invalid_str in result:
             continue
+
+        logger.info(f"chat single content result: {result}")
+        # check think
+        if "</think>" in result:
+            ret_list = result.split("</think>")
+            if len(ret_list) < 2:
+                continue
+            result = ret_list[1].strip()
         return result
     return None
 

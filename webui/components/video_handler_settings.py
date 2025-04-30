@@ -185,7 +185,8 @@ def video_title_polish():
                                                 content=st.session_state['first_video_name'],
                                                 temperature=llm_temperature,
                                                 invalid_str="-->",
-                                                            retry_count=3)
+                                                            retry_count=3,
+                                                            is_remove_thinking=True)
     if llm_result:
         st.session_state['video_polish_name'] = llm_result
 
