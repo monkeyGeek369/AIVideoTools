@@ -2,7 +2,7 @@ from streamlit.delta_generator import DeltaGenerator
 import streamlit as st
 import os
 from moviepy.editor import VideoFileClip, concatenate_videoclips,vfx
-from app.utils import file_utils
+from app.utils import file_utils,utils
 from moviepy.video.fx.painting import painting
 import numpy as np
 from app.services import audio,localhost_llm
@@ -171,17 +171,17 @@ def video_title_polish():
     llm_api_key = st.session_state['llm_api_key']
     llm_model = st.session_state['llm_model']
     llm_temperature = st.session_state['llm_temperature']
+
+    # get llm prompt
+    video_title_prompt_path = os.path.join(utils.root_dir(), "app","config","video_title_prompt.md")
+    with open(video_title_prompt_path, 'r', encoding='utf-8') as f:
+        md_content = f.read()
+
+    # get llm result
     llm_result = localhost_llm.chat_single_content(base_url=llm_url,
                                                 api_key=llm_api_key,
                                                 model=llm_model,
-                                                prompt='''
-你现在是一名视频标题润色专家,需要对给到的视频标题进行润色.有如下要求:
-1、润色后的标题含义与原标题含义相同但文字表达不同.
-2、润色后的标题字数不能超过原视频字数的1.5倍.
-3、润色后的标题一定要朗读通顺、无错别字.
-4、直接输出标题,不需要额外字符包裹.
-5、整体字数绝对不能超过100字.
-''',
+                                                prompt=md_content,
                                                 content=st.session_state['first_video_name'],
                                                 temperature=llm_temperature,
                                                 invalid_str="-->",
