@@ -118,6 +118,10 @@
     "compound_handler_submit_success":"合成处理成功",
     "video_audio_vfx":"视频音频特效",
     "end_bless":"视频结束祝福",
-    "video_title_polish":"视频标题润色"
+    "video_title_polish":"视频标题润色",
+    "full_area":"全屏",
+    "upper_part_area":"上半部分",
+    "lower_part_area":"下半部分",
+    "subtitle_recognize_area":"字幕识别区域"
   }
 }

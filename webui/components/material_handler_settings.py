@@ -30,6 +30,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     subtitle_position_recognize_checkbox_value = None
     ignore_subtitle_area = None
     min_subtitle_merge_distance = None
+    sub_rec_area = None
 
     # create checkbox
     split_container=material_handler_form.container()
@@ -42,15 +43,23 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split",value=True)
     with column4:
         subtitle_position_recognize_checkbox_value = column4.checkbox(label=tr("subtitle_position_recognize"),key="subtitle_position_recognize",value=True)
-        ignore_subtitle_area = column4.text_input(label=tr("ignore_subtitle_area"),key="ignore_subtitle_area",value=500)
-        min_subtitle_merge_distance = column4.text_input(label=tr("min_subtitle_merge_distance"),key="min_subtitle_merge_distance",value=100)
+        sub_rec_params_container,sub_area_container = column4.columns(2)
+        with sub_rec_params_container:
+            ignore_subtitle_area = sub_rec_params_container.text_input(label=tr("ignore_subtitle_area"),key="ignore_subtitle_area",value=500)
+            min_subtitle_merge_distance = sub_rec_params_container.text_input(label=tr("min_subtitle_merge_distance"),key="min_subtitle_merge_distance",value=100)
+        with sub_area_container:
+            sub_rec_area_options = [
+                (tr("full_area"), "full_area"),
+                (tr("upper_part_area"), "upper_part_area"),
+                (tr("lower_part_area"), "lower_part_area"),
+            ]
+            sub_rec_area_selected = sub_area_container.radio(label=tr("subtitle_recognize_area"),options=[item[0] for item in sub_rec_area_options],index=0,key="subtitle_recognize_area")
+            sub_rec_area = [item for item in sub_rec_area_options if item[0] == sub_rec_area_selected][0][1]
 
     # create submit button
     submitted = material_handler_form.form_submit_button(label=tr("material_handler_submit"))
     with split_container:
-        # print(subtitle_mosaic_checkbox_value)
-        # print(subtitle_identification_mode_value.split(" - ")[0])
-        # print(mosaic_neighbor_value)
+        #print(sub_rec_area)
         with st.spinner(tr("processing")):
             if submitted:
                 if not uploaded_origin_videos:
@@ -70,7 +79,8 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                                                       container_dict,
                                                       subtitle_position_recognize_checkbox_value,
                                                       ignore_subtitle_area,
-                                                      min_subtitle_merge_distance)
+                                                      min_subtitle_merge_distance,
+                                                      sub_rec_area)
                     st.success(tr("material_handler_submit_success"))
                 except Exception as e:
                     logger.error(tr("material_handler_submit_error")+": "+str(e))
@@ -94,7 +104,7 @@ def save_uploaded_origin_videos(videos:list[UploadedFile]):
         file_utils.save_uploaded_file(uploaded_file=video,save_dir=origin_videos,allowed_types=['.mp4','.webm'])
 
 def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator],
-                                      subtitle_position_recognize:bool,ignore_subtitle_area:int,min_subtitle_merge_distance:int):
+                                      subtitle_position_recognize:bool,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str):
     # get task path
     task_path = st.session_state['task_path']
 
@@ -153,7 +163,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
         if subtitle_position_recognize:
             file_name = origin_video.name+".mp4"
             video_path = os.path.join(material_videos_path,file_name)
-            recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance))
+            recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance),sub_rec_area)
         if split_subtitles and os.path.exists(subtitle_file_path):
             subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
 
@@ -215,9 +225,9 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
         )
 
 
-def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int):
+def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str):
     # get subtitle position
-    position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance)
+    position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance,sub_rec_area)
 
     coord = None
     if position_dict:

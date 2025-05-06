@@ -1,13 +1,9 @@
-import json
 import os.path
 import re
-import traceback
-from typing import Optional
 import streamlit as st
 from faster_whisper import WhisperModel
 from timeit import default_timer as timer
 from loguru import logger
-from moviepy.editor import VideoFileClip
 import os
 from PIL import ImageFont
 from app.config import config
@@ -422,4 +418,36 @@ def str_to_list(file_path: str) -> list[dict]:
         return None
     return [{"index":sub[0],"timerange":sub[1],"text":sub[2]} for sub in sub_tumples]
 
+def filter_frame_subtitles_position_by_area(sub_rec_area:str,frame_subtitles_position:dict[float,dict]) -> dict:
+    if sub_rec_area == "full_area":
+        return frame_subtitles_position
+    v_height = int(st.session_state.get("video_height"))
 
+    for t, result in frame_subtitles_position.items():
+        if result is None:
+            continue
+        # origin coordinates
+        origin_coordinates = result.get("coordinates")
+
+        # realy coordinates
+        realy_coordinates = []
+        for coord in origin_coordinates:
+            if coord is None:
+                continue
+            
+            # top left
+            x1,y1 = coord[0]
+            # bottom right
+            x2,y2 = coord[1]
+
+            if sub_rec_area == "upper_part_area":
+                if y2 <= v_height * 0.5:
+                    realy_coordinates.append(coord)
+                
+            if sub_rec_area == "lower_part_area":
+                if y1 >= v_height * 0.5:
+                    realy_coordinates.append(coord)
+
+        result["coordinates"] = realy_coordinates
+
+    return frame_subtitles_position

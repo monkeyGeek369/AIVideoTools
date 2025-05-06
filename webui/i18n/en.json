@@ -118,6 +118,10 @@
     "compound_handler_submit_success":"compound processing success",
     "video_audio_vfx":"video audio vfx",
     "end_bless":"video end bless",
-    "video_title_polish":"video title polish"
+    "video_title_polish":"video title polish",
+    "full_area":"full area",
+    "upper_part_area":"upper part area",
+    "lower_part_area":"lower part area",
+    "subtitle_recognize_area":"subtitle recognize area"
   }
 }
