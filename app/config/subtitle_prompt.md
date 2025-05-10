@@ -83,3 +83,4 @@
 
 1. 输出结果需要为json数组
 2. json数组中的每一个数据对象必须包括index、timerange、text字段
+3. 不要重复输出多次json数组
