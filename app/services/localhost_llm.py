@@ -82,9 +82,11 @@ def call_llm_get_list(base_url:str,api_key:str,model:str,prompt:str,content:str,
                 ret_list = result.split("</think>")
                 if len(ret_list) < 2:
                     continue
-                result = ret_list[1].strip()
+                result = ret_list[len(ret_list)-1].strip()
 
             # result to list[dict]
+            if result[-1] != ']':
+                result = result + ']'
             list_dict = json.loads(result)
             if list_dict is None or len(list_dict) == 0:
                 continue
