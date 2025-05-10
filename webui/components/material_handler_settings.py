@@ -31,6 +31,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     ignore_subtitle_area = None
     min_subtitle_merge_distance = None
     sub_rec_area = None
+    subtitle_ocr_filter_checkbox_value = None
 
     # create checkbox
     split_container=material_handler_form.container()
@@ -41,6 +42,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         voice_split_checkbox_value = column2.checkbox(label=tr("voice_split"),key="voice_split",value=True)
     with column3:
         subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split",value=True)
+        subtitle_ocr_filter_checkbox_value = column3.checkbox(label=tr("subtitle_ocr_filter"),key="subtitle_ocr_filter",value=True)
     with column4:
         subtitle_position_recognize_checkbox_value = column4.checkbox(label=tr("subtitle_position_recognize"),key="subtitle_position_recognize",value=True)
         sub_rec_params_container,sub_area_container = column4.columns(2)
@@ -80,7 +82,8 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                                                       subtitle_position_recognize_checkbox_value,
                                                       ignore_subtitle_area,
                                                       min_subtitle_merge_distance,
-                                                      sub_rec_area)
+                                                      sub_rec_area,
+                                                      subtitle_ocr_filter_checkbox_value)
                     st.success(tr("material_handler_submit_success"))
                 except Exception as e:
                     logger.error(tr("material_handler_submit_error")+": "+str(e))
@@ -104,7 +107,8 @@ def save_uploaded_origin_videos(videos:list[UploadedFile]):
         file_utils.save_uploaded_file(uploaded_file=video,save_dir=origin_videos,allowed_types=['.mp4','.webm'])
 
 def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator],
-                                      subtitle_position_recognize:bool,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str):
+                                      subtitle_position_recognize:bool,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str,
+                                      subtitle_ocr_filter:bool):
     # get task path
     task_path = st.session_state['task_path']
 
@@ -164,7 +168,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             file_name = origin_video.name+".mp4"
             video_path = os.path.join(material_videos_path,file_name)
             recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance),sub_rec_area)
-        if split_subtitles and os.path.exists(subtitle_file_path):
+        if split_subtitles and os.path.exists(subtitle_file_path) and subtitle_ocr_filter:
             subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
 
     # show material

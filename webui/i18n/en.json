@@ -122,6 +122,7 @@
     "full_area":"full area",
     "upper_part_area":"upper part area",
     "lower_part_area":"lower part area",
-    "subtitle_recognize_area":"subtitle recognize area"
+    "subtitle_recognize_area":"subtitle recognize area",
+    "subtitle_ocr_filter":"ocr filter subtitle (when recognize subtitle)"
   }
 }
