@@ -69,7 +69,7 @@ def check_llm_status(base_url:str,api_key:str,model:str) -> bool:
             client.close()
             del client
 
-def call_llm_get_list(base_url:str,api_key:str,model:str,prompt:str,content:str,retry_contents:list[str],temperature:float,retry_count:int) -> list[dict]:
+def call_llm_get_list(base_url:str,api_key:str,model:str,prompt:str,content:str,retry_contents:list[str],temperature:float,retry_count:int,result_not_nono:bool) -> list[dict]:
     current_count = 0
     while current_count < retry_count:
         current_count += 1
@@ -95,7 +95,8 @@ def call_llm_get_list(base_url:str,api_key:str,model:str,prompt:str,content:str,
                 result = result + ']'
             list_dict = json.loads(result)
             if list_dict is None or len(list_dict) == 0:
-                continue
+                if result_not_nono:
+                    continue
             if not isinstance(list_dict, list):
                 continue
             return list_dict

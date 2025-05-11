@@ -518,7 +518,7 @@ def subtitle_llm_handler(base_url:str,
     # llm handler: optimize subtitle
     req_content_list = [{"index":sub.get("index"),"text":sub.get("text")} for sub in subtitle_list if sub is not None]
     optimize_content = content_step_optimize.format(sub_title=title,sub_content=json.dumps(req_content_list,ensure_ascii=False))
-    optimized_list = localhost_llm.call_llm_get_list(base_url,api_key,model,prompt,optimize_content,retry_contents,temperature,retry_count)
+    optimized_list = localhost_llm.call_llm_get_list(base_url,api_key,model,prompt,optimize_content,retry_contents,temperature,retry_count,True)
     for opt_item in optimized_list:
         if opt_item is None:
             continue
@@ -531,7 +531,7 @@ def subtitle_llm_handler(base_url:str,
     # llm handler: remove error subtitle
     req_remove_content = [{"index":sub.get("index"),"duration":get_subtitle_duration(sub.get("timerange")),"text":sub.get("text")} for sub in subtitle_list if sub is not None]
     remove_content = content_step_remove.format(sub_title=title,sub_content=json.dumps(req_remove_content,ensure_ascii=False))
-    error_index_list = localhost_llm.call_llm_get_list(base_url,api_key,model,prompt,remove_content,retry_contents,temperature,retry_count)
+    error_index_list = localhost_llm.call_llm_get_list(base_url,api_key,model,prompt,remove_content,retry_contents,temperature,retry_count,False)
     if error_index_list is not None and len(error_index_list) > 0:
         subtitle_list = [item for item in subtitle_list if item.get("index") not in error_index_list]
 
