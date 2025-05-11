@@ -42,13 +42,13 @@ def render_subtitle_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     material_videos = file_utils.get_file_list(directory=material_videos_path,sort_by="name")
 
     # ai handler
-    subtitle_prompt = os.path.join(utils.root_dir(), "app","config","subtitle_prompt.md")
-    with open(subtitle_prompt, 'r', encoding='utf-8') as f:
-        md_content = f.read()
+    # subtitle_prompt = os.path.join(utils.root_dir(), "app","config","subtitle_prompt.md")
+    # with open(subtitle_prompt, 'r', encoding='utf-8') as f:
+    #     md_content = f.read()
     llm_url = ai_container.text_input(label=tr("base_url"),key="llm_url",value="http://localhost:1234/v1")
     llm_api_key = ai_container.text_input(label=tr("api_key"),key="llm_api_key",value="lm-studio")
     llm_model = ai_container.text_input(label=tr("model"),key="llm_model",value="qwen3-14b")
-    llm_prompt = ai_container.text_area(label=tr("prompt"),key="llm_prompt",value=md_content)
+    llm_prompt = ai_container.text_area(label=tr("prompt"),key="llm_prompt",value="你需要扮演一位严格遵守任务要求的字幕处理专家，更加具体的角色设定按照用户的要求进行。")
     llm_temperature = ai_container.text_input(label=tr("temperature"),key="llm_temperature",value="0.7")
 
     ai_btn_container = ai_container.container(border=True)
@@ -103,21 +103,15 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
             video_clip = VideoFileClip(video_info.path)
             video_clips.append(video_clip)
 
-            # subtitle content
-            subtitle_list = subtitle.str_to_list(subtitle_info.path)
-
             # llm process
             llm_result = None
             if is_use_llm:
-                llm_content = {
-                    "title":subtitle_info.name,
-                    "subtitles":subtitle_list
-                }
-                llm_result_list = localhost_llm.call_llm_get_list(base_url=llm_url,
+                llm_result_list = subtitle.subtitle_llm_handler(base_url=llm_url,
                                                             api_key=llm_api_key,
                                                             model=llm_model,
                                                             prompt=llm_prompt,
-                                                            content=json.dumps(llm_content,ensure_ascii=False),
+                                                            title=subtitle_info.name,
+                                                            subtitle_file_path=subtitle_info.path,
                                                             temperature=llm_temperature,
                                                             retry_count=3)
                 if llm_result_list is None or len(llm_result_list) == 0:

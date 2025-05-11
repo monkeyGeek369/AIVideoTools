@@ -69,12 +69,18 @@ def check_llm_status(base_url:str,api_key:str,model:str) -> bool:
             client.close()
             del client
 
-def call_llm_get_list(base_url:str,api_key:str,model:str,prompt:str,content:str,temperature:float,retry_count:int) -> list[dict]:
-    while retry_count > 0:
-        retry_count -= 1
+def call_llm_get_list(base_url:str,api_key:str,model:str,prompt:str,content:str,retry_contents:list[str],temperature:float,retry_count:int) -> list[dict]:
+    current_count = 0
+    while current_count < retry_count:
+        current_count += 1
+        logger.info(f"call llm get list info: {current_count} execution now")
         result = base_single_call_llm(base_url,api_key,model,prompt,content,temperature)
         if result is None:
             continue
+        if retry_contents is not None:
+            for retry_content in retry_contents:
+                if retry_content in result:
+                    continue
         try:
             logger.info(f"call llm get list result: {result}")
             # check think

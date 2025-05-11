@@ -4,11 +4,12 @@ import streamlit as st
 from faster_whisper import WhisperModel
 from timeit import default_timer as timer
 from loguru import logger
-import os
+import os,json
 from PIL import ImageFont
 from app.config import config
 from app.utils import utils,str_util
 from app.models.subtitle_position_coord import SubtitlePositionCoord
+from app.services import localhost_llm
 
 model_size = config.whisper.get("model_size", "faster-whisper-large-v2")
 device = config.whisper.get("device", "cpu")
@@ -298,6 +299,22 @@ def analysis_subtitles(subtitles:list[tuple[int,str,str]]):
 
     return subtitle_blocks
 
+def get_subtitle_duration(subtitle_duration_str:str) -> int:
+    if not subtitle_duration_str:
+        return 0
+    
+    # get time str
+    start_time, end_time = subtitle_duration_str.split(' --> ')
+    if not start_time or not end_time:
+        return 0
+
+    def parse_srt_time(time_str):
+        hhmmss, ms = time_str.strip().split(',')
+        h, m, s = hhmmss.split(':')
+        return int(h)*3600*1000 + int(m)*60*1000 + int(s)*1000 + int(ms)
+    
+    return parse_srt_time(end_time) - parse_srt_time(start_time)
+
 def remove_valid_subtitles_by_ocr(subtitle_path:str):
     recognize_position_model = None|SubtitlePositionCoord
     subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
@@ -451,3 +468,79 @@ def filter_frame_subtitles_position_by_area(sub_rec_area:str,frame_subtitles_pos
         result["coordinates"] = realy_coordinates
 
     return frame_subtitles_position
+
+def remove_any_subtitle_duplicates(data):
+    seen_text = set()
+    seen_timerange = set()
+    result = []
+    for item in data:
+        text = item['text']
+        timerange = item['timerange']
+        if text not in seen_text and timerange not in seen_timerange:
+            seen_text.add(text)
+            seen_timerange.add(timerange)
+            result.append(item)
+    return result
+
+def subtitle_llm_handler(base_url:str,
+                        api_key:str,
+                        model:str,
+                        prompt:str,
+                        title:str,
+                        subtitle_file_path:str,
+                        temperature=0.7,
+                        retry_count=3) -> list[dict]:
+    # subtitle content
+    subtitle_list = str_to_list(subtitle_file_path)
+    if subtitle_list is None or len(subtitle_list) == 0:
+        logger.error("subtitle content is empty")
+        return None
+    
+    # base param
+    retry_contents = ["语义不通顺，无法处理"]
+
+    # content_step_remove
+    content_step_remove_path = os.path.join(utils.root_dir(), "app","config","subtitle_remove_prompt.md")
+    with open(content_step_remove_path, 'r', encoding='utf-8') as f:
+        content_step_remove = f.read()
+
+    # content_step_optimize
+    content_step_optimize_path = os.path.join(utils.root_dir(), "app","config","subtitle_optimize_prompt.md")
+    with open(content_step_optimize_path, 'r', encoding='utf-8') as f:
+        content_step_optimize = f.read()
+
+    # base filter: repeat subtitle
+    subtitle_list = remove_any_subtitle_duplicates(subtitle_list)
+
+    # base filter: duration too low
+    subtitle_list = [item for item in subtitle_list if get_subtitle_duration(item.get("timerange")) > 600]
+
+    # llm handler: optimize subtitle
+    req_content_list = [{"index":sub.get("index"),"text":sub.get("text")} for sub in subtitle_list if sub is not None]
+    optimize_content = content_step_optimize.format(sub_title=title,sub_content=json.dumps(req_content_list,ensure_ascii=False))
+    optimized_list = localhost_llm.call_llm_get_list(base_url,api_key,model,prompt,optimize_content,retry_contents,temperature,retry_count)
+    for opt_item in optimized_list:
+        if opt_item is None:
+            continue
+        for sub_item in subtitle_list:
+            if sub_item is None:
+                continue
+            if opt_item.get("index") == sub_item.get("index"):
+                sub_item["text"] = opt_item.get("text")
+    
+    # llm handler: remove error subtitle
+    req_remove_content = [{"index":sub.get("index"),"duration":get_subtitle_duration(sub.get("timerange")),"text":sub.get("text")} for sub in subtitle_list if sub is not None]
+    remove_content = content_step_remove.format(sub_title=title,sub_content=json.dumps(req_remove_content,ensure_ascii=False))
+    error_index_list = localhost_llm.call_llm_get_list(base_url,api_key,model,prompt,remove_content,retry_contents,temperature,retry_count)
+    if error_index_list is not None and len(error_index_list) > 0:
+        subtitle_list = [item for item in subtitle_list if item.get("index") not in error_index_list]
+
+    # base filter
+    if len(subtitle_list) == 0:
+        raise Exception("no subtitle result")
+    
+    # format result index
+    for i, item in enumerate(subtitle_list, start=1):
+        item["index"] = i
+
+    return subtitle_list
