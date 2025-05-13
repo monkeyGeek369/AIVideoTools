@@ -228,14 +228,18 @@ def merge_audio_files(out_path: str, audio_files: list, subtitle_list: list):
             # get real audio duration
             real_audio_duration = sub_duration if sub_duration > audio_duration else audio_duration
 
-            # set data
-            audio_result_list.append((max(start_ms, last_audio_duration),audio_file))
-
+            # get data
+            data_item = (max(start_ms, last_audio_duration),audio_file)
+            
             # logic
             if start_ms > last_audio_duration:
                 last_audio_duration += (start_ms - last_audio_duration + real_audio_duration)
             else:
                 last_audio_duration += real_audio_duration
+            
+            # set data
+            if (video_duration+2)*1000 >= last_audio_duration:
+                audio_result_list.append(data_item)
 
         except Exception as e:
             logger.error(f"merge audio files error: {audio_file} error info: {str(e)}")
