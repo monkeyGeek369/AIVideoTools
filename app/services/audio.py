@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from multiprocessing import cpu_count
 import math
 from loguru import logger
+import streamlit as st
 
 audio_vfx_task_queue = queue.Queue(maxsize=50)
 
@@ -188,38 +189,66 @@ def audio_visualization_effect(video_clip,task_path):
     gc.collect()
     return video.fl(get_frame)
 
-def merge_audio_files(out_path: str, audio_files: list, total_duration: float, subtitle_list: list):
+def merge_audio_files(out_path: str, audio_files: list, subtitle_list: list):
     """
     merge audio files into a single audio file with subtitles.
     """
     if not ffmpeg_util.check_ffmpeg():
         logger.error("ffmpeg not found, please install ffmpeg.")
         return None
+    video_duration = st.session_state.get("video_duration")
+    if video_duration is None:
+        raise ValueError("video_duration is None, please check the video duration.")
+    if audio_files is None or len(audio_files) == 0:
+        raise ValueError("audio_files is empty")
+    if subtitle_list is None or len(subtitle_list) == 0:
+        raise ValueError("subtitle_list is empty")
+    if len(audio_files) != len(subtitle_list):
+        raise ValueError("audio_files and subtitle_list must have the same length")
 
-    # create blank audio segment
-    final_audio = AudioSegment.silent(duration=total_duration * 1000)
-
-    # merge audio files
+    # handle audio files
+    last_audio_duration = 0
+    audio_result_list = []
     for subtitle_item, audio_file in zip(subtitle_list, audio_files):
         try:
             # get subtitle item
             index, timestamp_str, text = subtitle_item
             start_time, end_time = timestamp_str.split(' --> ')
-            start_ms = utils.time_to_seconds(start_time) * 1000
-            end_ms = utils.time_to_seconds(end_time) * 1000
-
-            # get audio duration
-            slot_duration = end_ms - start_ms
-            if slot_duration <= 0:
+            start_ms = utils.time_to_ms(start_time)
+            end_ms = utils.time_to_ms(end_time)
+            sub_duration = end_ms - start_ms
+            if sub_duration <= 0:
                 logger.warning(f"invalid timestamp: {timestamp_str}")
                 continue
 
             # load audio file
             tts_audio = AudioSegment.from_file(audio_file)
-            final_audio = final_audio.overlay(tts_audio, position=start_ms)
+            audio_duration = len(tts_audio)
+
+            # get real audio duration
+            real_audio_duration = sub_duration if sub_duration > audio_duration else audio_duration
+
+            # set data
+            audio_result_list.append((max(start_ms, last_audio_duration),audio_file))
+
+            # logic
+            if start_ms > last_audio_duration:
+                last_audio_duration += (start_ms - last_audio_duration + real_audio_duration)
+            else:
+                last_audio_duration += real_audio_duration
+
         except Exception as e:
             logger.error(f"merge audio files error: {audio_file} error info: {str(e)}")
             continue
+        finally:
+            del tts_audio
+    
+    # create blank audio segment
+    final_audio = AudioSegment.silent(duration=last_audio_duration+1000)
+    for start_time_ms,audio_file in audio_result_list:
+        audio_tts = AudioSegment.from_file(audio_file)
+        final_audio = final_audio.overlay(audio_tts, position=start_time_ms)
+        del audio_tts
 
     # save merged audio file
     output_audio_path = os.path.join(out_path, "edit_audio.mp3")

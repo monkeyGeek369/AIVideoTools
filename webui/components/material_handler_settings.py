@@ -129,10 +129,11 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
         raise Exception("origin videos is empty")
 
     # split origin videos
+    video_duration = 0
     for origin_video in origin_videos:
         if split_videos:
             video = VideoFileClip(origin_video.path)
-            video = video.without_audio()                  
+            video = video.without_audio()
             temp_audio_path = os.path.join(task_path, "temp", "material-audio.aac")
             video.write_videofile(
                 os.path.join(material_videos_path,origin_video.name+".mp4"),
@@ -153,6 +154,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             )
             st.session_state['video_height'] = video.h
             st.session_state['video_width'] = video.w
+            video_duration += video.duration
             video.close()
         audio_file_path = os.path.join(material_voices_path,origin_video.name+".wav")
         subtitle_file_path = os.path.join(material_subtitles_path,origin_video.name+".srt")
@@ -170,6 +172,9 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance),sub_rec_area)
         if split_subtitles and os.path.exists(subtitle_file_path) and subtitle_ocr_filter:
             subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
+
+    # add data
+    st.session_state['video_duration'] = video_duration
 
     # show material
     show_materials(container_dict["material_video_expander"],container_dict["material_bg_music_expander"],

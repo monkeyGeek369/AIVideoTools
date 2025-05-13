@@ -1267,11 +1267,6 @@ def tts_multiple(out_path:str,subtitle_list: list, voice_name: str, voice_rate: 
 def subtitle_to_voice(subtitles:list[tuple[int,str,str]],temp_path:str,voice_name:str,
                       voice_rate:float,voice_pitch:float,voice_volume:float,
                       out_path:str) -> str:
-    # get total duration
-    last_timestamp = subtitles[-1][1]
-    end_time = last_timestamp.split(" --> ")[1]
-    total_duration = utils.time_to_seconds(end_time)
-
     # get audios
     audio_files, sub_maker_list = tts_multiple(
         out_path=temp_path,
@@ -1293,7 +1288,6 @@ def subtitle_to_voice(subtitles:list[tuple[int,str,str]],temp_path:str,voice_nam
         final_audio = audio.merge_audio_files(
             out_path=out_path,
             audio_files=audio_files,
-            total_duration=total_duration+1, 
             subtitle_list=subtitles
         )
     except Exception as e:

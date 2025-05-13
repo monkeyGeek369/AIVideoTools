@@ -363,19 +363,6 @@ def get_current_country():
 
 
 def time_to_seconds(time_str: str) -> float:
-    """
-    将时间字符串转换为秒数，支持多种格式：
-    - "HH:MM:SS,mmm" -> 小时:分钟:秒,毫秒
-    - "MM:SS,mmm" -> 分钟:秒,毫秒
-    - "SS,mmm" -> 秒,毫秒
-    - "SS-mmm" -> 秒-毫秒
-    
-    Args:
-        time_str: 时间字符串
-        
-    Returns:
-        float: 转换后的秒数(包含毫秒)
-    """
     try:
         # 处理带有'-'的毫秒格式
         if '-' in time_str:
@@ -406,6 +393,37 @@ def time_to_seconds(time_str: str) -> float:
     except (ValueError, IndexError) as e:
         logger.error(f"时间格式转换错误 {time_str}: {str(e)}")
         return 0.0
+    
+def time_to_ms(time_str: str) -> int:
+    try:
+        # get seconds and milliseconds
+        if '-' in time_str:
+            time_part, ms_part = time_str.split('-')
+            ms = int(ms_part)
+        elif ',' in time_str:
+            time_part, ms_part = time_str.split(',')
+            ms = int(ms_part)
+        else:
+            time_part = time_str
+            ms = 0
+
+        # split time part
+        parts = time_part.split(':')
+
+        if len(parts) == 3:  # HH:MM:SS
+            h, m, s = map(int, parts)
+            seconds = h * 3600 + m * 60 + s
+        elif len(parts) == 2:  # MM:SS
+            m, s = map(int, parts)
+            seconds = m * 60 + s
+        else:  # SS
+            seconds = int(parts[0])
+
+        return seconds * 1000 + ms
+
+    except (ValueError, IndexError) as e:
+        logger.error(f"时间格式转换错误 {time_str}: {str(e)}")
+        return 0
 
 def seconds_to_time(seconds: float) -> str:
     h, remainder = divmod(seconds, 3600)
