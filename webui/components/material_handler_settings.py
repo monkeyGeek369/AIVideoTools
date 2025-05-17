@@ -48,7 +48,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         subtitle_position_recognize_checkbox_value = column4.checkbox(label=tr("subtitle_position_recognize"),key="subtitle_position_recognize",value=True)
         sub_rec_params_container,sub_area_container = column4.columns(2)
         with sub_rec_params_container:
-            ignore_subtitle_area = sub_rec_params_container.text_input(label=tr("ignore_subtitle_area"),key="ignore_subtitle_area",value=2500)
+            ignore_subtitle_area = sub_rec_params_container.text_input(label=tr("ignore_subtitle_area"),key="ignore_subtitle_area",value=5000)
             min_subtitle_merge_distance = sub_rec_params_container.text_input(label=tr("min_subtitle_merge_distance"),key="min_subtitle_merge_distance",value=100)
         with sub_area_container:
             sub_rec_area_options = [
