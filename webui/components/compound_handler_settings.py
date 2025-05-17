@@ -294,7 +294,6 @@ def get_subtitle_clips(video_clip) -> tuple:
     if recognize_position_model.is_exist:
         heigh_dif_mid = int((recognize_position_model.right_bottom_y - recognize_position_model.left_top_y) / 2)
         recognize_height = int(recognize_position_model.left_top_y + heigh_dif_mid)
-        result_clip = video.video_subtitle_mosaic_auto(video_clip=video_clip,subtitle_position_coord=recognize_position_model)
 
     # base check
     subtitle_path = st.session_state.get("edit_subtitle_path",None)
