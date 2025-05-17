@@ -390,14 +390,14 @@ def generate_video_by_images(video_size,image_folder, fps=24, duration=10,last_f
 def images_to_video_clip(image_files:list,fps:int):
     return ImageSequenceClip(image_files, fps=fps)
 
-def video_clip_to_video(video_clip,video_path):
+def video_clip_to_video(video_clip,video_path,fps):
     task_path = st.session_state['task_path']
     temp_audio_path = os.path.join(task_path, "temp", "material-audio.aac")
     video_clip.write_videofile(
         video_path,
         codec='libx264',
         audio_codec='aac',
-        fps=video_clip.fps,
+        fps=fps,
         preset='medium',
         threads=os.cpu_count(),
         ffmpeg_params=[
