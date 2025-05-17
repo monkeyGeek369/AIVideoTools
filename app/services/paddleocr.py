@@ -77,9 +77,7 @@ def consumer():
                 # 检查坐标是否有效
                 if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
                     coordinates.append((top_left, bottom_right, text[0] if len(text) >=2 else None))
-                    # mosaic
-                    mosaic.telea_mosaic_for_file(frame_path, top_left[0], top_left[1], bottom_right[0], bottom_right[1])
-            
+
             coord_result = {
                 "index":index,
                 "coordinates": coordinates
@@ -89,7 +87,7 @@ def consumer():
         print(f"处理帧时发生错误: {str(e)}")
     return thread_local_results
 
-def get_video_frames_coordinates(video_path:str,frame_tmp_path:str,subtitle_auto_mosaic_checkbox_value:bool) -> dict:
+def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
     global task_queue
     task_queue = queue.Queue(maxsize=100)
     
@@ -115,14 +113,6 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str,subtitle_auto
     # 等待生产者线程结束
     producer_thread.join()
 
-    # 重新生成视频
-    if subtitle_auto_mosaic_checkbox_value:
-        image_files = []
-        for f_index in range(len(frame_coordinates)):
-            image_files.append(os.path.join(frame_tmp_path, f"frame_{f_index}.png"))
-        v_clip = video.images_to_video_clip(image_files=image_files,fps=st.session_state.get("video_fps"))
-        video.video_clip_to_video(video_clip=v_clip,video_path=video_path)
-        
     # 删除临时帧文件
     shutil.rmtree(frame_tmp_path)
 

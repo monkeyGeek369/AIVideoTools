@@ -115,6 +115,9 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
                                       subtitle_auto_mosaic_checkbox_value:bool):
     # get task path
     task_path = st.session_state['task_path']
+    recognize_position_model = None
+    video_path = None
+    temp_video_path = None
 
     # all path
     origin_videos = os.path.join(task_path, "origin_videos")
@@ -139,6 +142,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             video_clip = VideoFileClip(origin_video.path)
             video_clip = video_clip.without_audio()
             video_path = os.path.join(material_videos_path,origin_video.name+".mp4")
+            temp_video_path = os.path.join(material_videos_path,origin_video.name+"_temp.mp4")
             video.video_clip_to_video(video_clip,video_path)
             st.session_state['video_height'] = video_clip.h
             st.session_state['video_width'] = video_clip.w
@@ -156,11 +160,22 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
         if split_bg_musics:
             pass
         if subtitle_position_recognize:
-            file_name = origin_video.name+".mp4"
-            video_path = os.path.join(material_videos_path,file_name)
-            recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance),sub_rec_area,subtitle_auto_mosaic_checkbox_value)
+            recognize_position_model = recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance),sub_rec_area)
         if split_subtitles and os.path.exists(subtitle_file_path) and subtitle_ocr_filter:
             subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
+        if subtitle_auto_mosaic_checkbox_value:
+            with VideoFileClip(video_path) as mosaic_video_clip:
+                mosaic_result_clip = video.video_subtitle_mosaic_auto(
+                    video_clip=mosaic_video_clip,
+                    subtitle_position_coord=recognize_position_model
+                )
+                
+                video.video_clip_to_video(mosaic_result_clip, temp_video_path)
+                mosaic_result_clip.close()
+                
+                if os.path.exists(temp_video_path) and os.path.getsize(temp_video_path) > 0:
+                    os.remove(video_path)
+                    os.rename(temp_video_path, video_path)
 
     # add data
     st.session_state['video_duration'] = video_duration
@@ -223,9 +238,9 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
         )
 
 
-def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str,subtitle_auto_mosaic_checkbox_value:bool):
+def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str):
     # get subtitle position
-    position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance,sub_rec_area,subtitle_auto_mosaic_checkbox_value)
+    position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance,sub_rec_area)
 
     coord = None
     if position_dict:
@@ -246,4 +261,6 @@ def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subt
     subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
     subtitle_position_dict["edit_video.mp4"] = coord
     st.session_state['subtitle_position_dict'] = subtitle_position_dict
+
+    return coord
 

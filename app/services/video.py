@@ -103,7 +103,7 @@ def calculate_subtitle_position(position, video_height: int, custom_position: fl
     # 默认底部
     return ('center', SubtitlePosition.BOTTOM)
 
-def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int,sub_rec_area:str,subtitle_auto_mosaic_checkbox_value:bool) -> dict:
+def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int,sub_rec_area:str) -> dict:
     '''
     video_path: video file path
 
@@ -119,7 +119,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     task_path = st.session_state['task_path']
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
     ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿"]
-    frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path,subtitle_auto_mosaic_checkbox_value)
+    frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
 
     # filter frames coordinates by sub rec area
     frame_subtitles_position = subtitle.filter_frame_subtitles_position_by_area(sub_rec_area,frame_subtitles_position)
