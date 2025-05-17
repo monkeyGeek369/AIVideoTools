@@ -7,6 +7,8 @@ import os
 from multiprocessing import cpu_count
 from concurrent.futures import ThreadPoolExecutor
 import shutil
+from app.services import mosaic,video
+import streamlit as st
 
 # 全局变量
 paddle_ocr = None
@@ -41,7 +43,7 @@ def producer(video_path, tmp_path):
         if not ret:
             break
         t = frame_count / fps
-        frame_path = os.path.join(tmp_path, f"frame_{t:.2f}s.png")
+        frame_path = os.path.join(tmp_path, f"frame_{frame_count}.png")
         cv2.imwrite(frame_path, frame)
         task_queue.put((frame_count,t,frame_path))
     cap.release()
@@ -75,6 +77,8 @@ def consumer():
                 # 检查坐标是否有效
                 if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
                     coordinates.append((top_left, bottom_right, text[0] if len(text) >=2 else None))
+                    # mosaic
+                    mosaic.telea_mosaic_for_file(frame_path, top_left[0], top_left[1], bottom_right[0], bottom_right[1])
             
             coord_result = {
                 "index":index,
@@ -85,7 +89,7 @@ def consumer():
         print(f"处理帧时发生错误: {str(e)}")
     return thread_local_results
 
-def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
+def get_video_frames_coordinates(video_path:str,frame_tmp_path:str,subtitle_auto_mosaic_checkbox_value:bool) -> dict:
     global task_queue
     task_queue = queue.Queue(maxsize=100)
     
@@ -100,9 +104,9 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
     producer_thread.start()
 
     # 创建线程池（共享OCR模型）
-    with ThreadPoolExecutor(max_workers=cpu_count()) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         # 获取异步执行结果：用于结果获取、状态获取、回调机制
-        futures = [executor.submit(consumer) for _ in range(cpu_count())]
+        futures = [executor.submit(consumer) for _ in range(1)]
         frame_coordinates = {}
         for future in futures:
             thread_results = future.result()
@@ -110,6 +114,14 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
     
     # 等待生产者线程结束
     producer_thread.join()
+
+    # 重新生成视频
+    if subtitle_auto_mosaic_checkbox_value:
+        image_files = []
+        for f_index in range(len(frame_coordinates)):
+            image_files.append(os.path.join(frame_tmp_path, f"frame_{f_index}.png"))
+        v_clip = video.images_to_video_clip(image_files=image_files,fps=st.session_state.get("video_fps"))
+        video.video_clip_to_video(video_clip=v_clip,video_path=video_path)
         
     # 删除临时帧文件
     shutil.rmtree(frame_tmp_path)

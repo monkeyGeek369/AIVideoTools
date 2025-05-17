@@ -103,7 +103,7 @@ def calculate_subtitle_position(position, video_height: int, custom_position: fl
     # 默认底部
     return ('center', SubtitlePosition.BOTTOM)
 
-def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int,sub_rec_area:str) -> dict:
+def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int,sub_rec_area:str,subtitle_auto_mosaic_checkbox_value:bool) -> dict:
     '''
     video_path: video file path
 
@@ -118,8 +118,8 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     # frames coordinates
     task_path = st.session_state['task_path']
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
-    frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
     ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿"]
+    frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path,subtitle_auto_mosaic_checkbox_value)
 
     # filter frames coordinates by sub rec area
     frame_subtitles_position = subtitle.filter_frame_subtitles_position_by_area(sub_rec_area,frame_subtitles_position)
@@ -150,8 +150,6 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
             frame_coords = []
             for coord in position:
                 frame_coords.append((coord[0], coord[1],(coord[1][0] - coord[0][0])*(coord[1][1] - coord[0][1])))
-                # if is_overlap_over_half(((most_common_region[0][0],most_common_region[0][1]),(most_common_region[1][0],most_common_region[1][1])), coord):
-                #     frame_coords.append((coord[0], coord[1]))
             if frame_coords and len(frame_coords) >= 0:
                 frame_subtitles_position[index] = frame_coords
 
@@ -388,3 +386,27 @@ def generate_video_by_images(video_size,image_folder, fps=24, duration=10,last_f
     image_clip = concatenate_videoclips(clips, method="compose")
     image_clip = image_clip.resize(video_size)
     return image_clip
+
+def images_to_video_clip(image_files:list,fps:int):
+    return ImageSequenceClip(image_files, fps=fps)
+
+def video_clip_to_video(video_clip,video_path):
+    task_path = st.session_state['task_path']
+    temp_audio_path = os.path.join(task_path, "temp", "material-audio.aac")
+    video_clip.write_videofile(
+        video_path,
+        codec='libx264',
+        audio_codec='aac',
+        fps=video_clip.fps,
+        preset='medium',
+        threads=os.cpu_count(),
+        ffmpeg_params=[
+            "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
+            "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
+            "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
+            "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
+        ],
+        write_logfile=False, #是否写入日志
+        remove_temp=True,#是否删除临时文件
+        temp_audiofile=temp_audio_path  #指定音频的临时文件路径
+    )

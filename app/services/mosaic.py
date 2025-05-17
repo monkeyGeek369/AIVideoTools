@@ -119,3 +119,10 @@ def telea_mosaic(frame, x1, y1, x2, y2):
    mask = np.zeros(frame.shape[:2], dtype=np.uint8)
    cv2.rectangle(mask, (x1, y1), (x2, y2), 255, -1)
    return cv2.inpaint(frame, mask, 3, cv2.INPAINT_TELEA)
+
+def telea_mosaic_for_file(image_path, x1, y1, x2, y2):
+   frame = cv2.imread(image_path)
+   if frame is None:
+      raise ValueError("not found image")
+   result = telea_mosaic(frame, x1, y1, x2, y2)
+   cv2.imwrite(image_path, result)

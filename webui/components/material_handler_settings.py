@@ -32,6 +32,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     min_subtitle_merge_distance = None
     sub_rec_area = None
     subtitle_ocr_filter_checkbox_value = None
+    subtitle_auto_mosaic_checkbox_value = None
 
     # create checkbox
     split_container=material_handler_form.container()
@@ -56,6 +57,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                 (tr("lower_part_area"), "lower_part_area"),
             ]
             sub_rec_area_selected = sub_area_container.radio(label=tr("subtitle_recognize_area"),options=[item[0] for item in sub_rec_area_options],index=0,key="subtitle_recognize_area")
+            subtitle_auto_mosaic_checkbox_value = sub_area_container.checkbox(label=tr("subtitle_auto_mosaic"),key="subtitle_auto_mosaic",value=True)
             sub_rec_area = [item for item in sub_rec_area_options if item[0] == sub_rec_area_selected][0][1]
 
     # create submit button
@@ -83,7 +85,8 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                                                       ignore_subtitle_area,
                                                       min_subtitle_merge_distance,
                                                       sub_rec_area,
-                                                      subtitle_ocr_filter_checkbox_value)
+                                                      subtitle_ocr_filter_checkbox_value,
+                                                      subtitle_auto_mosaic_checkbox_value)
                     st.success(tr("material_handler_submit_success"))
                 except Exception as e:
                     logger.error(tr("material_handler_submit_error")+": "+str(e))
@@ -108,7 +111,8 @@ def save_uploaded_origin_videos(videos:list[UploadedFile]):
 
 def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator],
                                       subtitle_position_recognize:bool,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str,
-                                      subtitle_ocr_filter:bool):
+                                      subtitle_ocr_filter:bool,
+                                      subtitle_auto_mosaic_checkbox_value:bool):
     # get task path
     task_path = st.session_state['task_path']
 
@@ -132,30 +136,15 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
     video_duration = 0
     for origin_video in origin_videos:
         if split_videos:
-            video = VideoFileClip(origin_video.path)
-            video = video.without_audio()
-            temp_audio_path = os.path.join(task_path, "temp", "material-audio.aac")
-            video.write_videofile(
-                os.path.join(material_videos_path,origin_video.name+".mp4"),
-                codec='libx264',
-                audio_codec='aac',
-                fps=video.fps,
-                preset='medium',
-                threads=os.cpu_count(),
-                ffmpeg_params=[
-                    "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
-                    "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
-                    "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
-                    "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
-                ],
-                write_logfile=False, #是否写入日志
-                remove_temp=True,#是否删除临时文件
-                temp_audiofile=temp_audio_path  #指定音频的临时文件路径
-            )
-            st.session_state['video_height'] = video.h
-            st.session_state['video_width'] = video.w
-            video_duration += video.duration
-            video.close()
+            video_clip = VideoFileClip(origin_video.path)
+            video_clip = video_clip.without_audio()
+            video_path = os.path.join(material_videos_path,origin_video.name+".mp4")
+            video.video_clip_to_video(video_clip,video_path)
+            st.session_state['video_height'] = video_clip.h
+            st.session_state['video_width'] = video_clip.w
+            st.session_state['video_fps'] = video_clip.fps
+            video_duration += video_clip.duration
+            video_clip.close()
         audio_file_path = os.path.join(material_voices_path,origin_video.name+".wav")
         subtitle_file_path = os.path.join(material_subtitles_path,origin_video.name+".srt")
         if split_voices:
@@ -169,7 +158,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
         if subtitle_position_recognize:
             file_name = origin_video.name+".mp4"
             video_path = os.path.join(material_videos_path,file_name)
-            recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance),sub_rec_area)
+            recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance),sub_rec_area,subtitle_auto_mosaic_checkbox_value)
         if split_subtitles and os.path.exists(subtitle_file_path) and subtitle_ocr_filter:
             subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
 
@@ -234,9 +223,9 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
         )
 
 
-def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str):
+def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str,subtitle_auto_mosaic_checkbox_value:bool):
     # get subtitle position
-    position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance,sub_rec_area)
+    position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance,sub_rec_area,subtitle_auto_mosaic_checkbox_value)
 
     coord = None
     if position_dict:
