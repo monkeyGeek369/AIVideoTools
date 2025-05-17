@@ -189,7 +189,7 @@ def audio_visualization_effect(video_clip,task_path):
     gc.collect()
     return video.fl(get_frame)
 
-def merge_audio_files(out_path: str, audio_files: list, subtitle_list: list):
+def merge_audio_files(out_path: str, audio_files: list, subtitle_list: list,merged_subtitle_path: str):
     """
     merge audio files into a single audio file with subtitles.
     """
@@ -209,6 +209,7 @@ def merge_audio_files(out_path: str, audio_files: list, subtitle_list: list):
     # handle audio files
     last_audio_duration = 0
     audio_result_list = []
+    subtitle_update_list = []
     for subtitle_item, audio_file in zip(subtitle_list, audio_files):
         try:
             # get subtitle item
@@ -229,7 +230,8 @@ def merge_audio_files(out_path: str, audio_files: list, subtitle_list: list):
             real_audio_duration = sub_duration if sub_duration > audio_duration else audio_duration
 
             # get data
-            data_item = (max(start_ms, last_audio_duration),audio_file)
+            real_start_ms = max(start_ms, last_audio_duration)
+            data_item = (real_start_ms,audio_file)
             
             # logic
             if start_ms > last_audio_duration:
@@ -238,8 +240,17 @@ def merge_audio_files(out_path: str, audio_files: list, subtitle_list: list):
                 last_audio_duration += real_audio_duration
             
             # set data
-            if (video_duration+2)*1000 >= last_audio_duration:
-                audio_result_list.append(data_item)
+            audio_result_list.append(data_item)
+            subtitle_update_list.append(
+                utils.text_to_srt(
+                    index,
+                    text,
+                    float(real_start_ms/1000),
+                    float(last_audio_duration/1000)
+                )
+                )
+            if (video_duration * 1000) <= last_audio_duration:
+                break
 
         except Exception as e:
             logger.error(f"merge audio files error: {audio_file} error info: {str(e)}")
@@ -247,8 +258,14 @@ def merge_audio_files(out_path: str, audio_files: list, subtitle_list: list):
         finally:
             del tts_audio
     
+    # update subtitle file
+    if len(subtitle_update_list) > 0:
+        sub = "\n".join(subtitle_update_list) + "\n"
+        with open(merged_subtitle_path, "w", encoding="utf-8") as f:
+            f.write(sub)
+    
     # create blank audio segment
-    final_audio = AudioSegment.silent(duration=last_audio_duration+1000)
+    final_audio = AudioSegment.silent(duration=last_audio_duration)
     for start_time_ms,audio_file in audio_result_list:
         audio_tts = AudioSegment.from_file(audio_file)
         final_audio = final_audio.overlay(audio_tts, position=start_time_ms)

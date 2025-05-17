@@ -151,7 +151,8 @@ def voice_processing(tr,container_dict:dict[str,DeltaGenerator]):
                       voice_rate=float(st.session_state.get('voice_rate', 1.0)),
                       voice_pitch=float(st.session_state.get('voice_pitch', 1.0)),
                       voice_volume=float(st.session_state.get('voice_volume', 1.0)),
-                      out_path=out_path)
+                      out_path=out_path,
+                      merged_subtitle_path=merged_subtitle_path)
 
     # show final audio
     if final_audio is not None:

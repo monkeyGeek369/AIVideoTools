@@ -118,7 +118,8 @@ def subtitle_ai_handler(llm_url:str,llm_api_key:str,llm_model:str,llm_prompt:str
                     raise ValueError(tr("llm_result_empty"))
                 llm_result = subtitle.list_to_srt_str(llm_result_list)
             else:
-                llm_result = subtitle.list_to_srt_str(subtitle_content)
+                with open(subtitle_info.path, 'r', encoding='utf-8') as f:
+                    llm_result = f.read()
 
             # subtitle process
             if i == 0:
