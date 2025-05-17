@@ -24,8 +24,6 @@ def render_compound_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     with col3:
         subtitle_check = col3.checkbox(label=tr("compound_subtitle"),key="compound_subtitle",value=True)
         st.session_state['subtitle_enabled'] = subtitle_check
-        subtitle_auto = col3.checkbox(label=tr("compound_subtitle_auto"),key="compound_subtitle_auto",value=True)
-        st.session_state['subtitle_auto'] = subtitle_auto
 
         if subtitle_check:
             render_font_settings(tr)
@@ -204,7 +202,7 @@ def render_font_settings(tr):
             tr("font_size"),
             min_value=20,
             max_value=100,
-            value=subtitle.calculate_font_size(st.session_state.get('video_height')) if (st.session_state['subtitle_auto'] is not None and st.session_state['subtitle_auto']) else 45
+            value=subtitle.calculate_font_size(st.session_state.get('video_height'))
         )
         st.session_state['font_size'] = font_size
 
@@ -259,7 +257,7 @@ def render_style_settings(tr):
             tr("stroke_width"),
             min_value=0.0,
             max_value=10.0,
-            value=max(0.5,round(st.session_state['font_size']/50,2)) if (st.session_state['subtitle_auto'] is not None and st.session_state['subtitle_auto']) else float(1),
+            value=max(0.5,round(st.session_state['font_size']/50,2)),
             step=0.1
         )
         st.session_state['stroke_width'] = stroke_width
