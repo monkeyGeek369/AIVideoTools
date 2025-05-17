@@ -130,11 +130,11 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     # filter ignore text
     frame_subtitles_position = {result.get("index"): [(coord[0], coord[1]) for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
 
+    # filter by min_area
+    frame_subtitles_position = {index:[coords for coords in positions if is_valid_coordinate(coords[0],coords[1],min_area=min_area)] for index, positions in frame_subtitles_position.items()}
+
     # get all coordinates
     all_coords = [coord for result in frame_subtitles_position.values() for coord in result]
-
-    # filter invalid coordinates
-    all_coords = filter_coordinates(all_coords,min_area=min_area)
 
     # merge coordinates
     merged_counts = merge_coordinates_with_count(all_coords,threshold=distance_threshold)
@@ -279,11 +279,11 @@ def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositi
     # get subtitle position
     frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
     fps = video_clip.fps
-    left_top = (subtitle_position_coord.left_top_x,subtitle_position_coord.left_top_y)
-    right_bottom = (subtitle_position_coord.right_bottom_x,subtitle_position_coord.right_bottom_y)
+    # left_top = (subtitle_position_coord.left_top_x,subtitle_position_coord.left_top_y)
+    # right_bottom = (subtitle_position_coord.right_bottom_x,subtitle_position_coord.right_bottom_y)
 
     # load video
-    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position,fps,left_top,right_bottom))
+    return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position,fps))
 
 def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     '''
@@ -313,7 +313,7 @@ def recognize_subtitle_and_mosaic(frame,base_rect,reader):
     
     return frame_copy
 
-def make_frame_processor(frame,t:float,frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int],float]]],fps:int,left_top:tuple[int,int],right_bottom:tuple[int,int]):
+def make_frame_processor(frame,t:float,frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int],float]]],fps:int):
     frame_copy = frame.copy()
     index = int(np.round(t * fps))
     
@@ -410,3 +410,4 @@ def video_clip_to_video(video_clip,video_path):
         remove_temp=True,#是否删除临时文件
         temp_audiofile=temp_audio_path  #指定音频的临时文件路径
     )
+

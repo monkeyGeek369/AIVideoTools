@@ -143,7 +143,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
             video_clip = video_clip.without_audio()
             video_path = os.path.join(material_videos_path,origin_video.name+".mp4")
             temp_video_path = os.path.join(material_videos_path,origin_video.name+"_temp.mp4")
-            video.video_clip_to_video(video_clip,video_path)
+            video.video_clip_to_video(video_clip,video_path,video_clip.fps)
             st.session_state['video_height'] = video_clip.h
             st.session_state['video_width'] = video_clip.w
             st.session_state['video_fps'] = video_clip.fps
@@ -170,7 +170,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
                     subtitle_position_coord=recognize_position_model
                 )
                 
-                video.video_clip_to_video(mosaic_result_clip, temp_video_path)
+                video.video_clip_to_video(mosaic_result_clip, temp_video_path,mosaic_video_clip.fps)
                 mosaic_result_clip.close()
                 
                 if os.path.exists(temp_video_path) and os.path.getsize(temp_video_path) > 0:
