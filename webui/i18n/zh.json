@@ -108,7 +108,7 @@
     "min_subtitle_merge_distance":"最小字幕合并距离（像素）",
     "subtitle_position":"字幕位置",
     "subtitle_position_tips":"字幕位置展示列表",
-    "Origin_subtitle_position":"原始字幕位置(自动对原字幕马赛克)",
+    "Origin_subtitle_position":"原始字幕位置",
     "compound_subtitle_auto":"自动识别字幕",
     "llm_handler_success":"llm字幕处理成功",
     "use_original_subtitle_success":"使用原始字幕成功",
