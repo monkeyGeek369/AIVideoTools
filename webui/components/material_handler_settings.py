@@ -3,7 +3,7 @@ import streamlit as st
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from app.utils import file_utils,utils
 from loguru import logger
-import os,torch,gc
+import os,torch,gc,re
 from moviepy.editor import VideoFileClip
 from app.services import subtitle,video,audio
 from app.models.file_info import LocalFileInfo
@@ -118,6 +118,7 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
     recognize_position_model = None
     video_path = None
     temp_video_path = None
+    video_name = None
 
     # all path
     origin_videos = os.path.join(task_path, "origin_videos")
@@ -138,19 +139,20 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
     # split origin videos
     video_duration = 0
     for origin_video in origin_videos:
+        video_name = re.sub(r'[\\/*?:"<>“”|]', "", origin_video.name)
         if split_videos:
             video_clip = VideoFileClip(origin_video.path)
             video_clip = video_clip.without_audio()
-            video_path = os.path.join(material_videos_path,origin_video.name+".mp4")
-            temp_video_path = os.path.join(material_videos_path,origin_video.name+"_temp.mp4")
+            video_path = os.path.join(material_videos_path,video_name+".mp4")
+            temp_video_path = os.path.join(material_videos_path,video_name+"_temp.mp4")
             video.video_clip_to_video(video_clip,video_path,video_clip.fps)
             st.session_state['video_height'] = video_clip.h
             st.session_state['video_width'] = video_clip.w
             st.session_state['video_fps'] = video_clip.fps
             video_duration += video_clip.duration
             video_clip.close()
-        audio_file_path = os.path.join(material_voices_path,origin_video.name+".wav")
-        subtitle_file_path = os.path.join(material_subtitles_path,origin_video.name+".srt")
+        audio_file_path = os.path.join(material_voices_path,video_name+".wav")
+        subtitle_file_path = os.path.join(material_subtitles_path,video_name+".srt")
         if split_voices:
             audio.get_audio_from_video(origin_video.path,audio_file_path)
         if split_subtitles:
@@ -184,10 +186,6 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
     show_materials(container_dict["material_video_expander"],container_dict["material_bg_music_expander"],
                    container_dict["material_voice_expander"],container_dict["material_subtitle_expander"],
                    container_dict["subtitle_position_expander"])
-
-def split_audio(material_voices_path:str,origin_video:LocalFileInfo):
-    utils.create_dir(material_voices_path)
-    audio.get_audio_from_video(origin_video.path,os.path.join(material_voices_path,origin_video.name+".wav"))
 
 def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenerator,voice_container:DeltaGenerator,
                    subtitle_container:DeltaGenerator,subtitle_position:DeltaGenerator):
