@@ -3,35 +3,37 @@ import streamlit as st
 import os,shutil,math
 from app.utils import utils,file_utils
 from pydub import AudioSegment
+from app.services import bg_music
 
 
 def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
     """渲染背景音乐设置"""
-    # 背景音乐选项
+    # bgm type
     bgm_options = [
-        (tr("no_bg_music"), ""),
+        (tr("no_bg_music"), None),
         (tr("random_bg_music"), "random"),
         (tr("custom_bg_music"), "custom"),
     ]
-
     selected_index = st_container.selectbox(
         tr("background_music"),
         index=1,
         options=range(len(bgm_options)),
         format_func=lambda x: bgm_options[x][0],
     )
-
-    # 获取选择的背景音乐类型
     bgm_type = bgm_options[selected_index][1]
-    #st.session_state['bgm_type'] = bgm_type
 
+    # custom bgm file if bgm_type is custom
     custom_bgm_file = None
     if bgm_type == "custom":
         custom_bgm_file = st_container.text_input(tr("custom_bgm_file"), value="")
+    
+    # bgm style
+    bgm_style_list = bg_music.get_bgm_type_list()
+    bgm_style_selected_index = st_container.selectbox(tr("bgm_style"), index=0, options=range(len(bgm_style_list)), format_func=lambda x: bgm_style_list[x][0])
+    bgm_style = bgm_style_list[bgm_style_selected_index][1]
 
-    # 背景音乐音量
+    # bgm volume
     bgm_volume = st_container.text_input(tr("bgm_volume"), value=0.2,help=tr("bgm_volume_help"))
-    #st.session_state['bgm_volume'] = bgm_volume
 
     # get save path
     task_path = st.session_state['task_path']
@@ -44,7 +46,7 @@ def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     if submit_button:
         with st_container:
             with st.spinner(tr("processing")):
-                bgm_path = utils.get_bgm_file(bgm_type=bgm_type, bgm_file=custom_bgm_file)
+                bgm_path = bg_music.get_bgm_file(bgm_type=bgm_type, bgm_file=custom_bgm_file, bgm_dir_path=bgm_style)
 
                 if bgm_path is None or bgm_path == "":
                     st_container.error(tr("no_bg_music"))

@@ -124,6 +124,7 @@
     "lower_part_area":"lower part area",
     "subtitle_recognize_area":"subtitle recognize area",
     "subtitle_ocr_filter":"ocr filter subtitle (when recognize subtitle)",
-    "subtitle_auto_mosaic":"auto mosaic subtitle"
+    "subtitle_auto_mosaic":"auto mosaic subtitle",
+    "bgm_style":"background music style"
   }
 }

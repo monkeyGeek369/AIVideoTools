@@ -25,7 +25,6 @@ def get_response(status: int, data: Any = None, message: str = ""):
         obj["message"] = message
     return obj
 
-
 def to_json(obj):
     try:
         # 定义一个辅助函数来处理不同类型的对象
@@ -57,17 +56,14 @@ def to_json(obj):
     except Exception as e:
         return None
 
-
 def get_uuid(remove_hyphen: bool = False):
     u = str(uuid4())
     if remove_hyphen:
         u = u.replace("-", "")
     return u
 
-
 def root_dir():
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
 
 def storage_dir(sub_dir: str = "", create: bool = False):
     d = os.path.join(root_dir(), "storage")
@@ -78,13 +74,11 @@ def storage_dir(sub_dir: str = "", create: bool = False):
 
     return d
 
-
 def resource_dir(sub_dir: str = ""):
     d = os.path.join(root_dir(), "resource")
     if sub_dir:
         d = os.path.join(d, sub_dir)
     return d
-
 
 def task_dir(sub_dir: str = ""):
     d = os.path.join(storage_dir(), "tasks")
@@ -94,18 +88,8 @@ def task_dir(sub_dir: str = ""):
         os.makedirs(d)
     return d
 
-
 def font_dir(sub_dir: str = ""):
     d = resource_dir("fonts")
-    if sub_dir:
-        d = os.path.join(d, sub_dir)
-    if not os.path.exists(d):
-        os.makedirs(d)
-    return d
-
-
-def song_dir(sub_dir: str = ""):
-    d = resource_dir("songs")
     if sub_dir:
         d = os.path.join(d, sub_dir)
     if not os.path.exists(d):
@@ -120,52 +104,6 @@ def end_images_dir(sub_dir: str = ""):
         os.makedirs(d)
     return d
 
-def get_bgm_file(bgm_type: str = "random", bgm_file: str = ""):
-    """
-    获取背景音乐文件路径
-    Args:
-        bgm_type: 背景音乐类型，可选值: random(随机), ""(无背景音乐)
-        bgm_file: 指定的背景音乐文件路径
-
-    Returns:
-        str: 背景音乐文件路径
-    """
-    import glob
-    import random
-    if not bgm_type:
-        return ""
-
-    if bgm_file and os.path.exists(bgm_file) and os.path.isfile(bgm_file):
-        if bgm_file.endswith(".mp3"):
-            return bgm_file
-        else:
-            return None
-
-    if bgm_type == "random":
-        song_dir_path = song_dir()
-
-        # 检查目录是否存在
-        if not os.path.exists(song_dir_path):
-            logger.warning(f"背景音乐目录不存在: {song_dir_path}")
-            return ""
-
-        # 支持 mp3 和 flac 格式
-        mp3_files = glob.glob(os.path.join(song_dir_path, "*.mp3"))
-        flac_files = glob.glob(os.path.join(song_dir_path, "*.flac"))
-        files = mp3_files + flac_files
-
-        # 检查是否找到音乐文件
-        if not files:
-            logger.warning(f"在目录 {song_dir_path} 中没有找到 MP3 或 FLAC 文件")
-            return ""
-        
-        random.seed()  # 显式重新种子化随机数生成器
-        return random.sample(files, 1)[0]
-        #return random.choice(files)
-
-    return ""
-
-
 def public_dir(sub_dir: str = ""):
     d = resource_dir(f"public")
     if sub_dir:
@@ -173,7 +111,6 @@ def public_dir(sub_dir: str = ""):
     if not os.path.exists(d):
         os.makedirs(d)
     return d
-
 
 def srt_dir(sub_dir: str = ""):
     d = resource_dir(f"srt")
@@ -183,19 +120,6 @@ def srt_dir(sub_dir: str = ""):
         os.makedirs(d)
     return d
 
-
-def run_in_background(func, *args, **kwargs):
-    def run():
-        try:
-            func(*args, **kwargs)
-        except Exception as e:
-            logger.error(f"run_in_background error: {e}")
-
-    thread = threading.Thread(target=run)
-    thread.start()
-    return thread
-
-
 def time_convert_seconds_to_hmsm(seconds) -> str:
     hours = int(seconds // 3600)
     seconds = seconds % 3600
@@ -203,7 +127,6 @@ def time_convert_seconds_to_hmsm(seconds) -> str:
     milliseconds = int(seconds * 1000) % 1000
     seconds = int(seconds % 60)
     return "{:02d}:{:02d}:{:02d},{:03d}".format(hours, minutes, seconds, milliseconds)
-
 
 def text_to_srt(idx: int, msg: str, start_time: float, end_time: float) -> str:
     start_time = time_convert_seconds_to_hmsm(start_time)
@@ -219,53 +142,16 @@ def text_to_srt(idx: int, msg: str, start_time: float, end_time: float) -> str:
     )
     return srt
 
-
 def str_contains_punctuation(word):
     for p in const.PUNCTUATIONS:
         if p in word:
             return True
     return False
 
-
-def split_string_by_punctuations(s):
-    result = []
-    txt = ""
-
-    previous_char = ""
-    next_char = ""
-    for i in range(len(s)):
-        char = s[i]
-        if char == "\n":
-            result.append(txt.strip())
-            txt = ""
-            continue
-
-        if i > 0:
-            previous_char = s[i - 1]
-        if i < len(s) - 1:
-            next_char = s[i + 1]
-
-        if char == "." and previous_char.isdigit() and next_char.isdigit():
-            # 取现1万，按2.5%收取手续费, 2.5 中的 . 不能作为换行标记
-            txt += char
-            continue
-
-        if char not in const.PUNCTUATIONS:
-            txt += char
-        else:
-            result.append(txt.strip())
-            txt = ""
-    result.append(txt.strip())
-    # filter empty string
-    result = list(filter(None, result))
-    return result
-
-
 def md5(text):
     import hashlib
 
     return hashlib.md5(text.encode("utf-8")).hexdigest()
-
 
 def get_system_locale():
     try:
@@ -277,7 +163,6 @@ def get_system_locale():
     except Exception as e:
         return "en"
 
-
 def load_locales(i18n_dir):
     _locales = {}
     for root, dirs, files in os.walk(i18n_dir):
@@ -287,20 +172,6 @@ def load_locales(i18n_dir):
                 with open(os.path.join(root, file), "r", encoding="utf-8") as f:
                     _locales[lang] = json.loads(f.read())
     return _locales
-
-
-def parse_extension(filename):
-    return os.path.splitext(filename)[1].strip().lower().replace(".", "")
-
-
-def script_dir(sub_dir: str = ""):
-    d = resource_dir(f"scripts")
-    if sub_dir:
-        d = os.path.join(d, sub_dir)
-    if not os.path.exists(d):
-        os.makedirs(d)
-    return d
-
 
 def video_dir(sub_dir: str = ""):
     d = resource_dir(f"videos")
@@ -313,54 +184,6 @@ def video_dir(sub_dir: str = ""):
 def create_dir(dir:str):
     if not os.path.exists(dir):
         os.makedirs(dir)
-
-def split_timestamp(timestamp):
-    """
-    拆分时间戳
-    """
-    start, end = timestamp.split('-')
-    start_hour, start_minute = map(int, start.split(':'))
-    end_hour, end_minute = map(int, end.split(':'))
-
-    start_time = '00:{:02d}:{:02d}'.format(start_hour, start_minute)
-    end_time = '00:{:02d}:{:02d}'.format(end_hour, end_minute)
-
-    return start_time, end_time
-
-
-def reduce_video_time(txt: str, duration: float = 0.21531):
-    """
-    按照字数缩减视频时长，一个字耗时约 0.21531 s,
-    Returns:
-    """
-    # 返回结果四舍五入为整数
-    duration = len(txt) * duration
-    return int(duration)
-
-
-def get_current_country():
-    """
-    判断当前网络IP地址所在的国家
-    """
-    try:
-        # 使用ipapi.co的免费API获取IP地址信息
-        response = requests.get('https://ipapi.co/json/')
-        data = response.json()
-
-        # 获取国家名称
-        country = data.get('country_name')
-
-        if country:
-            logger.debug(f"当前网络IP地址位于：{country}")
-            return country
-        else:
-            logger.debug("无法确定当前网络IP地址所在的国家")
-            return None
-
-    except requests.RequestException:
-        logger.error("获取IP地址信息时发生错误，请检查网络连接")
-        return None
-
 
 def time_to_seconds(time_str: str) -> float:
     try:
@@ -482,7 +305,6 @@ def init_resources():
     except Exception as e:
         logger.error(f"初始化资源文件失败: {e}")
 
-
 def download_font(url: str, font_path: str):
     """下载字体文件"""
     try:
@@ -500,25 +322,6 @@ def download_font(url: str, font_path: str):
         logger.error(f"下载字体文件失败: {e}")
         raise
 
-
-def init_imagemagick():
-    """初始化 ImageMagick 配置"""
-    try:
-        # 检查 ImageMagick 是否已安装
-        import subprocess
-        result = subprocess.run(['magick', '-version'], capture_output=True, text=True)
-        if result.returncode != 0:
-            logger.error("ImageMagick 未安装或配置不正确")
-            return False
-
-        # 设置 IMAGEMAGICK_BINARY 环境变量
-        os.environ['IMAGEMAGICK_BINARY'] = 'magick'
-
-        return True
-    except Exception as e:
-        logger.error(f"初始化 ImageMagick 失败: {str(e)}")
-        return False
-
 def cleanup_tasks():
     tasks_path = task_dir()
     file_utils.cleanup_temp_files(tasks_path)
@@ -532,4 +335,6 @@ def cleanup_all_closed_tasks():
         if task_all_path not in active_task_paths:
             shutil.rmtree(task_all_path)
 
+def get_subdir_names(path):
+    return [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
 

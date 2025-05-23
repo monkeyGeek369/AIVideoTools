@@ -36,3 +36,7 @@ app/models/faster-whisper-large-v2/*
 app/models/faster-whisper-large-v3/*
 app/models/bert/*
 app/models/easyocr/*.pth
+resource/bgm/*.mp3
+resource/bgm/*.flac
+resource/bgm/**/*.mp3
+resource/bgm/**/*.flac
