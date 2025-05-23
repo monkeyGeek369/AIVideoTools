@@ -34,7 +34,7 @@ def render_bg_music_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         if not bgm_style_list or len(bgm_style_list) == 0:
             st_container.warning(tr("bg_music_not_config"))
         else:
-            bgm_style_selected_index = st_container.selectbox(tr("bgm_style"), index=0, options=range(len(bgm_style_list)), format_func=lambda x: bgm_style_list[x][0])
+            bgm_style_selected_index = st_container.selectbox(tr("bgm_style"),key="bgm_style", index=0, options=range(len(bgm_style_list)), format_func=lambda x: bgm_style_list[x][0])
             bgm_style = bgm_style_list[bgm_style_selected_index][1]
 
     # bgm volume
