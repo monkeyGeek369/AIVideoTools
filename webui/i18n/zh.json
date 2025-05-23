@@ -125,6 +125,7 @@
     "subtitle_recognize_area":"字幕识别区域",
     "subtitle_ocr_filter":"OCR过滤字幕(勾选识别字幕时生效)",
     "subtitle_auto_mosaic":"自动马赛克字幕",
-    "bgm_style":"背景音乐风格"
+    "bgm_style":"背景音乐风格",
+    "bg_music_not_config":"背景音乐未配置,请在resource/bgm中配置"
   }
 }
