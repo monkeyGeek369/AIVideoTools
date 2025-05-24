@@ -85,19 +85,19 @@ def create(audio_file, subtitle_file: str = ""):
     try:
         segments, info = model.transcribe(
             audio_file,
-            beam_size=6,#使用束搜索(beam search)算法进行解码，束宽设为5。较大的值可以提高准确性但会降低速度
-            best_of=3,#最优解，3个解码器输出，每个解码器输出的最大词数为512，较大的值可以提高准确性但会降低速度
             word_timestamps=True,#为每个单词生成时间戳信息
-            vad_filter=True,#启用语音活动检测(VAD)过滤，自动过滤掉静音部分
-            temperature=0.4,#控制解码时的随机性，较低的值(如0.3)使输出更确定性和保守
-            no_repeat_ngram_size=3,#防止2-gram重复出现，减少重复内容
-            vad_parameters=dict(
-                min_silence_duration_ms=500,#设置VAD参数，这里指定最小静音持续时间为300毫秒
-                speech_pad_ms=300 # 语音前后填充时间（避免截断）
-                ),
-            language="zh",
-            task="transcribe",#执行转录任务(与"translate"翻译任务相对)
-            initial_prompt="以下是清晰的标准普通话，文本连贯无重复"
+            # beam_size=10,#使用束搜索(beam search)算法进行解码，束宽设为5。较大的值可以提高准确性但会降低速度
+            # best_of=5,#最优解，3个解码器输出，每个解码器输出的最大词数为512，较大的值可以提高准确性但会降低速度
+            # vad_filter=True,#启用语音活动检测(VAD)过滤，自动过滤掉静音部分
+            # temperature=0.4,#控制解码时的随机性，较低的值(如0.3)使输出更确定性和保守
+            # no_repeat_ngram_size=3,#防止2-gram重复出现，减少重复内容
+            # vad_parameters=dict(
+            #     min_silence_duration_ms=500,#设置VAD参数，这里指定最小静音持续时间为300毫秒
+            #     speech_pad_ms=300 # 语音前后填充时间（避免截断）
+            #     ),
+            # language="zh",
+            # task="transcribe",#执行转录任务(与"translate"翻译任务相对)
+            initial_prompt="请将以下普通话语音转写为简体中文书面文本，避免重复。"
         )
     except Exception as e:
         model = None
@@ -125,6 +125,8 @@ def create(audio_file, subtitle_file: str = ""):
 
     for segment in segments:
         words_idx = 0
+        if segment.words is None:
+            continue
         words_len = len(segment.words)
 
         seg_start = 0
