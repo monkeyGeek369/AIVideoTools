@@ -2,7 +2,7 @@ from loguru import logger
 from moviepy.editor import *
 from PIL import ImageFont
 import numpy as np
-import os,easyocr,shutil,random
+import os,easyocr,shutil,random,re
 from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
@@ -411,3 +411,5 @@ def video_clip_to_video(video_clip,video_path,fps):
         temp_audiofile=temp_audio_path  #指定音频的临时文件路径
     )
 
+def remove_video_titile_spe_chars(video_name:str):
+    return re.sub(r'[\\/*?:"<>“”|]', "", video_name)
