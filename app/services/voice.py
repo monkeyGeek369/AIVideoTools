@@ -1222,6 +1222,7 @@ def tts_multiple(out_path:str,subtitle_list: list, voice_name: str, voice_rate: 
     
     audio_files = []
     sub_maker_list = []
+    subtitle_result_list=[]
 
     for item in subtitle_list:
         index, timestamp_str, text = item
@@ -1240,6 +1241,9 @@ def tts_multiple(out_path:str,subtitle_list: list, voice_name: str, voice_rate: 
         start_time = utils.time_to_seconds(sub_times[0])
         end_time = utils.time_to_seconds(sub_times[1])
         duration = end_time - start_time
+        if duration <= 0.0:
+            logger.error(f"无效的时间戳: {timestamp},duration is zero or negative")
+            continue
         sub_maker = tts(
             text=text,
             voice_name=voice_name,
@@ -1260,16 +1264,17 @@ def tts_multiple(out_path:str,subtitle_list: list, voice_name: str, voice_rate: 
 
         audio_files.append(audio_file)
         sub_maker_list.append(sub_maker)
+        subtitle_result_list.append(item)
         logger.info(f"已生成音频文件: {audio_file}")
 
-    return audio_files, sub_maker_list
+    return audio_files, sub_maker_list, subtitle_result_list
 
 def subtitle_to_voice(subtitles:list[tuple[int,str,str]],temp_path:str,voice_name:str,
                       voice_rate:float,voice_pitch:float,voice_volume:float,
                       out_path:str,
                       merged_subtitle_path:str) -> str:
     # get audios
-    audio_files, sub_maker_list = tts_multiple(
+    audio_files, sub_maker_list, subtitle_result_list = tts_multiple(
         out_path=temp_path,
         subtitle_list=subtitles, 
         voice_name=voice_name,
@@ -1289,7 +1294,7 @@ def subtitle_to_voice(subtitles:list[tuple[int,str,str]],temp_path:str,voice_nam
         final_audio = audio.merge_audio_files(
             out_path=out_path,
             audio_files=audio_files,
-            subtitle_list=subtitles,
+            subtitle_list=subtitle_result_list,
             merged_subtitle_path=merged_subtitle_path
         )
     except Exception as e:

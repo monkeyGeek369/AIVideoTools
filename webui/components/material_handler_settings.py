@@ -107,8 +107,8 @@ def save_uploaded_origin_videos(videos:list[UploadedFile]):
     # save videos
     video_name = video.remove_video_titile_spe_chars(videos[0].name.split(".")[0])
     st.session_state['first_video_name'] = video_name
-    for video in videos:
-        file_utils.save_uploaded_file(uploaded_file=video,save_dir=origin_videos,allowed_types=['.mp4','.webm'])
+    for video_item in videos:
+        file_utils.save_uploaded_file(uploaded_file=video_item,save_dir=origin_videos,allowed_types=['.mp4','.webm'])
 
 def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator],
                                       subtitle_position_recognize:bool,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str,

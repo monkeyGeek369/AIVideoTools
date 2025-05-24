@@ -122,25 +122,25 @@ def compound_video(tr,bg_music_check:bool,voice_check:bool,subtitle_check:bool,c
         if not os.path.exists(temp_audio_path):
             os.makedirs(temp_audio_path)
         
-        temp_audio_file = os.path.join(temp_audio_path, "compound-audio.aac")
-
-        final_clip.write_videofile(
-            final_clip_path,
-            codec='libx264',
-            audio_codec='aac',
-            fps=video_clip.fps,
-            preset='slow',
-            threads=os.cpu_count(),
-            ffmpeg_params=[
-                "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
-                "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
-                "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
-                "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
-            ],
-            write_logfile=False, #是否写入日志
-            remove_temp=True,#是否删除临时文件
-            temp_audiofile=temp_audio_file  #指定音频的临时文件路径
-        )
+        #temp_audio_file = os.path.join(temp_audio_path, "compound-audio.aac")
+        video.video_clip_to_video(final_clip,final_clip_path,video_clip.fps)
+        # final_clip.write_videofile(
+        #     final_clip_path,
+        #     codec='libx264',
+        #     audio_codec='aac',
+        #     fps=video_clip.fps,
+        #     preset='slow',
+        #     threads=os.cpu_count(),
+        #     ffmpeg_params=[
+        #         "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
+        #         "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
+        #         "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
+        #         "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
+        #     ],
+        #     write_logfile=False, #是否写入日志
+        #     remove_temp=True,#是否删除临时文件
+        #     temp_audiofile=temp_audio_file  #指定音频的临时文件路径
+        # )
 
         # show
         container_dict["compound_video_expander"].video(final_clip_path, format="video/mp4")

@@ -6,6 +6,7 @@ from app.utils import file_utils,utils
 from moviepy.video.fx.painting import painting
 import numpy as np
 from app.services import audio,localhost_llm
+from app.services import video as video_service
 
 
 def render_video_handler(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):
@@ -67,7 +68,7 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
         edit_videos_path = os.path.join(task_path, "edit_videos")
         file_utils.ensure_directory(edit_videos_path)
         final_clip_path = os.path.join(edit_videos_path, "edit_video.mp4")             
-        temp_audio_path = os.path.join(task_path, "temp", "edit-audio.aac")
+        #temp_audio_path = os.path.join(task_path, "temp", "edit-audio.aac")
         frame_path = os.path.join(task_path, "frame")
         file_utils.ensure_directory(frame_path)
 
@@ -104,23 +105,24 @@ def render_video_edit(tr,st_container:DeltaGenerator,container_dict:dict[str,Del
             final_clip = audio.audio_visualization_effect(final_clip,task_path)
 
         # save
-        final_clip.write_videofile(
-            final_clip_path,
-            codec='libx264',
-            audio_codec='aac',
-            fps=video_fps,
-            preset='medium',
-            threads=os.cpu_count(),
-            ffmpeg_params=[
-                "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
-                "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
-                "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
-                "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
-            ],
-            write_logfile=False, #是否写入日志
-            remove_temp=True,#是否删除临时文件
-            temp_audiofile=temp_audio_path  #指定音频的临时文件路径
-        )
+        video_service.video_clip_to_video(final_clip,final_clip_path,video_fps)
+        # final_clip.write_videofile(
+        #     final_clip_path,
+        #     codec='libx264',
+        #     audio_codec='aac',
+        #     fps=video_fps,
+        #     preset='medium',
+        #     threads=os.cpu_count(),
+        #     ffmpeg_params=[
+        #         "-crf", "30",          # 控制视频“质量”，这里的质量主要是指视频的主观视觉质量，即人眼观看视频时的清晰度、细节保留程度以及压缩带来的失真程度
+        #         "-b:v", "2000k", # 设置目标比特率，控制视频每秒数据量，与视频大小有直接关联。
+        #         "-pix_fmt", "yuv420p",#指定像素格式。yuv420p 是一种常见的像素格式，兼容性较好，适用于大多数播放器。
+        #         "-row-mt", "1"#启用行级多线程，允许编码器在单帧内并行处理多行数据，从而提高编码效率。0表示不启用
+        #     ],
+        #     write_logfile=False, #是否写入日志
+        #     remove_temp=True,#是否删除临时文件
+        #     temp_audiofile=temp_audio_path  #指定音频的临时文件路径
+        # )
 
         # show
         container_dict["edit_video_expander"].video(final_clip_path, format="video/mp4")
