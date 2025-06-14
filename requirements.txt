@@ -22,3 +22,4 @@ paddlepaddle==3.0.0
 # python -m pip install paddlepaddle-gpu==2.6.2 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
 paddleocr==2.7.0.0
 aiofiles==24.1.0
+# 访问torch官网，自行安装torch对应cuda11.8的版本，例如pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
