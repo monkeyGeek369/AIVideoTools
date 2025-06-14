@@ -2,7 +2,7 @@ from loguru import logger
 from moviepy.editor import *
 from PIL import ImageFont
 import numpy as np
-import os,easyocr,shutil,random,re
+import os,shutil,random,re
 from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
