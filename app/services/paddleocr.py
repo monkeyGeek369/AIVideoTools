@@ -35,8 +35,7 @@ def init_paddleocr(use_gpu,max_batch_size):
         #cpu_threads=1, # 在 CPU 上进行推理时使用的线程数
         enable_hpi=False, # 高性能推理是否启用(需要按照官网要求额外安装依赖)
         use_tensorrt=False, # 是否使用TensorRT加速(需要按照官网要求额外安装依赖)
-        text_recognition_batch_size = max_batch_size, # 文本识别批次大小
-        lang="ch" # 识别中文
+        text_recognition_batch_size = max_batch_size # 文本识别批次大小
         )
 
 def producer(video_path, tmp_path):
