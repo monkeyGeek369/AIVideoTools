@@ -69,55 +69,64 @@ def producer(video_path, tmp_path):
     cap.release()
     task_queue.put((None,None,None))
 
-def consumer():
+def consumer(batch_size):
     """处理单个帧"""
     thread_local_results = {}
     global paddle_ocr
 
     try:
         while True:
-            index,t,frame_path = task_queue.get()
-            coordinates = []
-            if frame_path is None:  # 遇到结束标志
-                task_queue.put((None,None,None))  # 通知其他消费者退出
+            # get batch size datas
+            batch_size_datas = []
+            while len(batch_size_datas) < batch_size:
+                index,t,frame_path = task_queue.get()
+                if frame_path is None:  # 遇到结束标志
+                    task_queue.put((None,None,None))  # 通知其他消费者退出
+                    break
+                batch_size_datas.append((index,t,frame_path))
+
+            # check batch size datas
+            if len(batch_size_datas) <= 0:  # 遇到结束标志
                 break
             
-            # OCR检测
-            result = paddle_ocr.predict(input=frame_path, 
+            # batch ocr process
+            results = paddle_ocr.predict(input=[item[2] for item in batch_size_datas], 
                                         use_doc_orientation_classify=False,
                                         use_doc_unwarping=False,
                                         use_textline_orientation=False,
                                         text_rec_score_thresh=float(0.7))
-            if not result or not result[0]:
+            if results is None or len(results) <= 0:
                 continue
+            
+            for batch_index,(index,t,frame_path) in enumerate(batch_size_datas):
+                coordinates = []
+                rec_scores = results[batch_index].get("rec_scores", [])
+                rec_texts = results[batch_index].get("rec_texts", [])
+                rec_boxes = results[batch_index].get("rec_boxes", [])
 
-            rec_scores = result[0].get("rec_scores", [])
-            rec_texts = result[0].get("rec_texts", [])
-            rec_boxes = result[0].get("rec_boxes", [])
+                # 遍历结果并绘制矩形框
+                for score_item, text_item, box_item in zip(rec_scores, rec_texts, rec_boxes):
+                    if score_item is None or score_item < 0.7:
+                        continue
+                    if text_item is None or len(text_item) < 2:
+                        continue
 
-            # 遍历结果并绘制矩形框
-            for score_item, text_item, box_item in zip(rec_scores, rec_texts, rec_boxes):
-                if score_item is None or score_item < 0.7:
-                    continue
-                if text_item is None or len(text_item) < 2:
-                    continue
+                    box_positions_list = box_item.tolist()
+                    positions = ((box_positions_list[0],box_positions_list[1]),
+                                (box_positions_list[2],box_positions_list[3]))
+                    text = text_item
+                    top_left = tuple(map(int, positions[0]))
+                    bottom_right = tuple(map(int, positions[1]))
 
-                box_positions_list = box_item.tolist()
-                positions = ((box_positions_list[0],box_positions_list[1]),
-                             (box_positions_list[2],box_positions_list[3]))
-                text = text_item
-                top_left = tuple(map(int, positions[0]))
-                bottom_right = tuple(map(int, positions[1]))
+                    # 检查坐标是否有效
+                    if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
+                        coordinates.append((top_left, bottom_right, text))
 
-                # 检查坐标是否有效
-                if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
-                    coordinates.append((top_left, bottom_right, text))
-
-            coord_result = {
-                "index":index,
-                "coordinates": coordinates
-            }
-            thread_local_results[t] = coord_result
+                coord_result = {
+                    "index":index,
+                    "coordinates": coordinates
+                }
+                thread_local_results[t] = coord_result
     except Exception as e:
         print(f"处理帧时发生错误: {str(e)}")
     return thread_local_results
@@ -130,7 +139,8 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
     use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.get_device() == "gpu:0"
     
     # 主进程初始化OCR模型
-    init_paddleocr(use_gpu,100)
+    batch_size = 100
+    init_paddleocr(use_gpu, batch_size)
 
     # 启动生产者线程
     producer_thread = threading.Thread(target=producer, args=(video_path, frame_tmp_path))
@@ -138,7 +148,7 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
 
     # 消费者执行
     frame_coordinates = {}  
-    consumer_result = consumer()
+    consumer_result = consumer(batch_size)
     frame_coordinates.update(consumer_result)
     
     # 等待生产者线程结束
