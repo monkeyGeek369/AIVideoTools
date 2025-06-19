@@ -11,6 +11,7 @@ from app.services import mosaic,video
 import streamlit as st
 import sys
 import multiprocessing
+from app.utils import utils
 
 # 在 macOS 上运行 PaddleOCR 多进程时必须：
 if sys.platform == 'darwin':
@@ -24,15 +25,27 @@ task_queue = queue.Queue(maxsize=100)
 
 def init_paddleocr(use_gpu,max_batch_size):
     global paddle_ocr
+    if sys.platform == 'darwin':
+        rec_model_name = "PP-OCRv5_mobile_rec"
+        rec_model_dir = os.path.join(utils.root_dir(), "resource", "ocr_model", "PP-OCRv5_mobile_rec_infer")
+        det_model_name = "PP-OCRv5_mobile_det"
+        det_model_dir = os.path.join(utils.root_dir(), "resource", "ocr_model", "PP-OCRv5_mobile_det_infer")
+    else:
+        rec_model_name = "PP-OCRv5_server_rec"
+        rec_model_dir = os.path.join(utils.root_dir(), "resource", "ocr_model", "PP-OCRv5_server_rec_infer")
+        det_model_name = "PP-OCRv5_server_det"
+        det_model_dir = os.path.join(utils.root_dir(), "resource", "ocr_model", "PP-OCRv5_server_det_infer")
+
     paddle_ocr = PaddleOCR(
         device="gpu:0" if use_gpu else "cpu",
         use_doc_orientation_classify=False, # 通过 use_doc_orientation_classify 参数指定不使用文档方向分类模型
         use_doc_unwarping=False, # 通过 use_doc_unwarping 参数指定不使用文本图像矫正模型
         use_textline_orientation=False, # 通过 use_textline_orientation 参数指定不使用文本行方向分类模型
-        text_recognition_model_dir="./resource/ocr_model/PP-OCRv5_server_rec_infer", # 文本识别模型路径
-        text_detection_model_dir="./resource/ocr_model/PP-OCRv5_server_det_infer", # 文本检测模型路径
+        text_recognition_model_name=rec_model_name, # 文本识别模型名称
+        text_recognition_model_dir=rec_model_dir, # 文本识别模型路径
+        text_detection_model_name=det_model_name, # 文本检测模型名称
+        text_detection_model_dir=det_model_dir, # 文本检测模型路径
         precision='fp32',  # 显式指定精度
-        #cpu_threads=1, # 在 CPU 上进行推理时使用的线程数
         enable_hpi=False, # 高性能推理是否启用(需要按照官网要求额外安装依赖)
         use_tensorrt=False, # 是否使用TensorRT加速(需要按照官网要求额外安装依赖)
         text_recognition_batch_size = max_batch_size # 文本识别批次大小
@@ -76,16 +89,27 @@ def consumer():
             if not result or not result[0]:
                 continue
 
+            rec_scores = result[0].get("rec_scores", [])
+            rec_texts = result[0].get("rec_texts", [])
+            rec_boxes = result[0].get("rec_boxes", [])
+
             # 遍历结果并绘制矩形框
-            for reg_result in result[0]:
-                positions = reg_result[0]
-                text = reg_result[1]
+            for score_item, text_item, box_item in zip(rec_scores, rec_texts, rec_boxes):
+                if score_item is None or score_item < 0.7:
+                    continue
+                if text_item is None or len(text_item) < 2:
+                    continue
+
+                box_positions_list = box_item.tolist()
+                positions = ((box_positions_list[0],box_positions_list[1]),
+                             (box_positions_list[2],box_positions_list[3]))
+                text = text_item
                 top_left = tuple(map(int, positions[0]))
-                bottom_right = tuple(map(int, positions[2]))
+                bottom_right = tuple(map(int, positions[1]))
 
                 # 检查坐标是否有效
                 if top_left[0] < bottom_right[0] and top_left[1] < bottom_right[1]:
-                    coordinates.append((top_left, bottom_right, text[0] if len(text) >=2 else None))
+                    coordinates.append((top_left, bottom_right, text))
 
             coord_result = {
                 "index":index,
