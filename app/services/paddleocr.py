@@ -24,8 +24,8 @@ def init_paddleocr(use_gpu,max_batch_size):
         text_recognition_model_dir="./resource/ocr_model/PP-OCRv5_server_rec_infer", # 文本识别模型路径
         text_detection_model_dir="./resource/ocr_model/PP-OCRv5_server_det_infer", # 文本检测模型路径
         precision='fp32',  # 显式指定精度
-        enable_hpi=True, # 高性能推理是否启用(需要按照官网要求额外安装依赖)
-        use_tensorrt=True, # 是否使用TensorRT加速(需要按照官网要求额外安装依赖)
+        enable_hpi=False, # 高性能推理是否启用(需要按照官网要求额外安装依赖)
+        use_tensorrt=False, # 是否使用TensorRT加速(需要按照官网要求额外安装依赖)
         text_recognition_batch_size = max_batch_size, # 文本识别批次大小
         lang="ch" # 识别中文
         )
