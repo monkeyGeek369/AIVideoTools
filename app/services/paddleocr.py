@@ -12,6 +12,7 @@ import streamlit as st
 import sys
 import multiprocessing
 from app.utils import utils
+import gc
 
 # 在 macOS 上运行 PaddleOCR 多进程时必须：
 if sys.platform == 'darwin':
@@ -180,18 +181,12 @@ def safe_cleanup():
             for attr in ['_controller', '_det_model', '_rec_model', '_cls_model']:
                 if hasattr(paddle_ocr, attr):
                     delattr(paddle_ocr, attr)
-            
-            # 调用析构函数
-            paddle_ocr.__del__()
         except Exception as e:
             print(f"清理失败: {str(e)}")
         finally:
             paddle_ocr = None
+            gc.collect()
     
     # 清理 GPU 缓存
     if paddle.device.is_compiled_with_cuda():
         paddle.device.cuda.empty_cache()
-    
-    # macOS 特定清理
-    if sys.platform == 'darwin':
-        os.system('purge')  # 强制释放系统内存
