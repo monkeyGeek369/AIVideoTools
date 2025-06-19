@@ -17,20 +17,18 @@ task_queue = queue.Queue(maxsize=100)
 def init_paddleocr(use_gpu,max_batch_size):
     global paddle_ocr
     paddle_ocr = PaddleOCR(
-                    use_angle_cls=True, # 关闭方向检测,提升速度
-                    det_model_dir="./resource/ocr_model/ch_PP-OCRv4_det_train",#区域检测
-                    rec_model_dir="./resource/ocr_model/ch_PP-OCRv4_rec_infer",#方向识别
-                    cls_model_dir="./resource/ocr_model/ch_ppocr_mobile_v2.0_cls_infer",#文本分类
-                    rec=True,
-                    cls=True,
-                    det_db_unclip_ratio=2.4,
-                    layout=False,  # 关闭布局分析（不需要结构）
-                    table=False,   # 关闭表格识别（不需要表格）
-                    precision='int8',  # 显式指定精度
-                    use_gpu=use_gpu, # GPU开关
-                    max_batch_size=max_batch_size, # 最大批次（将多个图像合并成一个批次，此参数设定了批次的最大容量）
-                    lang="ch" # 识别中文
-                    )
+        device="gpu:0" if use_gpu else "cpu",
+        use_doc_orientation_classify=False, # 通过 use_doc_orientation_classify 参数指定不使用文档方向分类模型
+        use_doc_unwarping=False, # 通过 use_doc_unwarping 参数指定不使用文本图像矫正模型
+        use_textline_orientation=False, # 通过 use_textline_orientation 参数指定不使用文本行方向分类模型
+        text_recognition_model_dir="./resource/ocr_model/PP-OCRv5_server_rec_infer", # 文本识别模型路径
+        text_detection_model_dir="./resource/ocr_model/PP-OCRv5_server_det_infer", # 文本检测模型路径
+        precision='fp32',  # 显式指定精度
+        enable_hpi=True, # 高性能推理是否启用
+        use_tensorrt=True, # 是否使用TensorRT加速
+        text_recognition_batch_size = max_batch_size, # 文本识别批次大小
+        lang="ch" # 识别中文
+        )
 
 def producer(video_path, tmp_path):
     """生成器函数，按需产生任务"""
@@ -63,7 +61,10 @@ def consumer():
                 break
             
             # OCR检测
-            result = paddle_ocr.ocr(frame_path, det=True, rec=True, cls=True)
+            result = paddle_ocr.predict(input=frame_path, 
+                                        use_doc_orientation_classify=False,
+                                        use_doc_unwarping=False,
+                                        use_textline_orientation=False)
             if not result or not result[0]:
                 continue
 
