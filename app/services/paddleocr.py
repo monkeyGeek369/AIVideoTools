@@ -85,7 +85,8 @@ def consumer():
             result = paddle_ocr.predict(input=frame_path, 
                                         use_doc_orientation_classify=False,
                                         use_doc_unwarping=False,
-                                        use_textline_orientation=False)
+                                        use_textline_orientation=False,
+                                        text_rec_score_thresh=float(0.7))
             if not result or not result[0]:
                 continue
 
