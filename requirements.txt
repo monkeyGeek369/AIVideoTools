@@ -17,9 +17,10 @@ pydub==0.25.1
 scikit-image==0.25.0
 opencv-python~=4.11
 matplotlib==3.10.1
+# ocr安装要求
+# 首先安装paddlepaddle,然后安装paddleocr.详情可查看官网文档,最新的v5ocr版本需要依赖都要达到3.0版本,如果需要gpu加速可使用如下命令
+# python -m pip install paddlepaddle-gpu==3.0.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
 paddlepaddle==3.0.0
-# 如果有提高效率的需求可以自行安装paddlepaddle-gpu
-# python -m pip install paddlepaddle-gpu==2.6.2 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
-paddleocr==2.7.0.0
+paddleocr==3.0.2
 aiofiles==24.1.0
 # 访问torch官网，自行安装torch对应cuda11.8的版本，例如pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
