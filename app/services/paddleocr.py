@@ -118,10 +118,8 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
     shutil.rmtree(frame_tmp_path)
 
     # clean up
-    global paddle_ocr
-    paddle_ocr = None
+    safe_cleanup()
     task_queue = None
-    paddle.device.cuda.empty_cache()
 
     return frame_coordinates
 
@@ -141,3 +139,15 @@ def get_frame_coordinates(frame_file_path:str,use_gpu:bool) -> list:
             coordinates.append((top_left, bottom_right))
     return coordinates
 
+def safe_cleanup():
+    global paddle_ocr
+    if paddle_ocr:
+        try:
+            if hasattr(paddle_ocr, '_reset'):  # 检查私有方法
+                paddle_ocr._reset()
+            paddle_ocr.__del__()
+        except Exception as e:
+            print(f"Cleanup failed: {str(e)}")
+        finally:
+            paddle_ocr = None
+    paddle.device.cuda.empty_cache()
