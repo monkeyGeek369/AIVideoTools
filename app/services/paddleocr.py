@@ -9,6 +9,14 @@ from concurrent.futures import ThreadPoolExecutor
 import shutil
 from app.services import mosaic,video
 import streamlit as st
+import sys
+import multiprocessing
+
+# 在 macOS 上运行 PaddleOCR 多进程时必须：
+if sys.platform == 'darwin':
+    multiprocessing.set_start_method('spawn', force=True)
+    os.environ['USE_PPOCR_MULTI_PROCESS'] = '0'  # 禁用 PaddleOCR 内部多进程
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
 # 全局变量
 paddle_ocr = None
@@ -24,6 +32,7 @@ def init_paddleocr(use_gpu,max_batch_size):
         text_recognition_model_dir="./resource/ocr_model/PP-OCRv5_server_rec_infer", # 文本识别模型路径
         text_detection_model_dir="./resource/ocr_model/PP-OCRv5_server_det_infer", # 文本检测模型路径
         precision='fp32',  # 显式指定精度
+        #cpu_threads=1, # 在 CPU 上进行推理时使用的线程数
         enable_hpi=False, # 高性能推理是否启用(需要按照官网要求额外安装依赖)
         use_tensorrt=False, # 是否使用TensorRT加速(需要按照官网要求额外安装依赖)
         text_recognition_batch_size = max_batch_size, # 文本识别批次大小
@@ -102,14 +111,10 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
     producer_thread = threading.Thread(target=producer, args=(video_path, frame_tmp_path))
     producer_thread.start()
 
-    # 创建线程池（共享OCR模型）
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        # 获取异步执行结果：用于结果获取、状态获取、回调机制
-        futures = [executor.submit(consumer) for _ in range(1)]
-        frame_coordinates = {}
-        for future in futures:
-            thread_results = future.result()
-            frame_coordinates.update(thread_results)
+    # 消费者执行
+    frame_coordinates = {}  
+    consumer_result = consumer()
+    frame_coordinates.update(consumer_result)
     
     # 等待生产者线程结束
     producer_thread.join()
@@ -143,11 +148,26 @@ def safe_cleanup():
     global paddle_ocr
     if paddle_ocr:
         try:
-            if hasattr(paddle_ocr, '_reset'):  # 检查私有方法
-                paddle_ocr._reset()
+            # 尝试通过公开接口释放
+            if hasattr(paddle_ocr, 'release'):
+                paddle_ocr.release()
+            
+            # 强制删除内部组件（通过反射）
+            for attr in ['_controller', '_det_model', '_rec_model', '_cls_model']:
+                if hasattr(paddle_ocr, attr):
+                    delattr(paddle_ocr, attr)
+            
+            # 调用析构函数
             paddle_ocr.__del__()
         except Exception as e:
-            print(f"Cleanup failed: {str(e)}")
+            print(f"清理失败: {str(e)}")
         finally:
             paddle_ocr = None
-    paddle.device.cuda.empty_cache()
+    
+    # 清理 GPU 缓存
+    if paddle.device.is_compiled_with_cuda():
+        paddle.device.cuda.empty_cache()
+    
+    # macOS 特定清理
+    if sys.platform == 'darwin':
+        os.system('purge')  # 强制释放系统内存
