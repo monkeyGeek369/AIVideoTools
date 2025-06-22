@@ -46,7 +46,7 @@ def init_paddleocr(use_gpu,max_batch_size):
         text_recognition_model_dir=rec_model_dir, # 文本识别模型路径
         text_detection_model_name=det_model_name, # 文本检测模型名称
         text_detection_model_dir=det_model_dir, # 文本检测模型路径
-        precision='fp32',  # 显式指定精度
+        precision='fp16',  # 显式指定精度
         enable_hpi=False, # 高性能推理是否启用(需要按照官网要求额外安装依赖)
         use_tensorrt=False, # 是否使用TensorRT加速(需要按照官网要求额外安装依赖)
         text_recognition_batch_size = max_batch_size # 文本识别批次大小
@@ -139,7 +139,7 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
     use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.get_device() == "gpu:0"
     
     # 主进程初始化OCR模型
-    batch_size = 100
+    batch_size = 10
     init_paddleocr(use_gpu, batch_size)
 
     # 启动生产者线程
