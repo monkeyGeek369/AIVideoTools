@@ -11,7 +11,6 @@ from app.utils import utils,str_util
 from app.models.subtitle_position_coord import SubtitlePositionCoord
 from app.services import localhost_llm
 
-model_size = config.whisper.get("model_size", "faster-whisper-large-v2")
 device = config.whisper.get("device", "cpu")
 compute_type = config.whisper.get("compute_type", "int8")
 
@@ -26,7 +25,7 @@ def create(audio_file, subtitle_file: str = ""):
         logger.error(
             "请先下载 whisper 模型\n\n"
             "********************************************\n"
-            "下载地址：https://huggingface.co/guillaumekln/faster-whisper-large-v2\n"
+            "下载地址：https://huggingface.co/Systran/faster-whisper-large-v3/tree/main\n"
             "存放路径：app/models \n"
             "********************************************\n"
         )
