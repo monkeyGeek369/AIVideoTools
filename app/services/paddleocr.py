@@ -139,7 +139,7 @@ def get_video_frames_coordinates(video_path:str,frame_tmp_path:str) -> dict:
     use_gpu = paddle.device.is_compiled_with_cuda() and paddle.device.get_device() == "gpu:0"
     
     # 主进程初始化OCR模型
-    batch_size = 20
+    batch_size = 10
     init_paddleocr(use_gpu, batch_size)
 
     # 启动生产者线程
