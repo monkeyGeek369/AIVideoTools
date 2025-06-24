@@ -24,3 +24,6 @@ paddlepaddle==3.0.0
 paddleocr==3.0.2
 aiofiles==24.1.0
 # 访问torch官网，自行安装torch对应cuda11.8的版本，例如pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# 系统手动安装ffmpeg用于视频处理
+# 系统手动安装imagemagick用于字幕生成
