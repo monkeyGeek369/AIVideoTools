@@ -118,7 +118,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     # frames coordinates
     task_path = st.session_state['task_path']
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
-    ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿"]
+    ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿","视频仅供娱乐","素材来源网络"]
     frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
 
     # filter frames coordinates by sub rec area
