@@ -1,10 +1,10 @@
 from streamlit.delta_generator import DeltaGenerator
-from .material_handler_settings import render_material_handler
-from .subtitle_handler_settings import render_subtitle_handler
-from .voice_handler_settings import render_voice_handler
-from .bg_music_handler_settings import render_bg_music_handler
-from .video_handler_settings import render_video_handler
-from .compound_handler_settings import render_compound_handler
+from ..components.material_handler_settings import render_material_handler
+from ..components.subtitle_handler_settings import render_subtitle_handler
+from ..components.voice_handler_settings import render_voice_handler
+from ..components.bg_music_handler_settings import render_bg_music_handler
+from ..components.video_handler_settings import render_video_handler
+from ..components.compound_handler_settings import render_compound_handler
 
 
 def render_control_panel(tr,st_container:DeltaGenerator,container_dict:dict[str,DeltaGenerator]):

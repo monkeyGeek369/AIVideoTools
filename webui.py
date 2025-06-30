@@ -3,7 +3,8 @@ import os,sys
 from app.config import config
 from app.utils import utils
 from streamlit.delta_generator import DeltaGenerator
-from webui.components import video_meta_data_settings,video_edit_settings,control_panel_settings,compound_settings
+from webui.layout import control_panel_settings
+from webui.layout import compound_settings, video_edit_settings, video_meta_data_settings
 
 def init_log():
     """初始化日志配置"""
