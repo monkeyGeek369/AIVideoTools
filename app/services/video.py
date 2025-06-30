@@ -103,7 +103,10 @@ def calculate_subtitle_position(position, video_height: int, custom_position: fl
     # 默认底部
     return ('center', SubtitlePosition.BOTTOM)
 
-def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_threshold:int,sub_rec_area:str) -> dict:
+def video_subtitle_overall_statistics(video_path:str,distance_threshold:int,sub_rec_area:str,
+                                                    ignore_min_width:int,
+                                                    ignore_min_height:int,
+                                                    ignore_min_word_count:int) -> dict:
     '''
     video_path: video file path
 
@@ -131,7 +134,7 @@ def video_subtitle_overall_statistics(video_path:str,min_area:int,distance_thres
     frame_subtitles_position = {result.get("index"): [(coord[0], coord[1]) for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
 
     # filter by min_area
-    frame_subtitles_position = {index:[coords for coords in positions if is_valid_coordinate(coords[0],coords[1],min_area=min_area)] for index, positions in frame_subtitles_position.items()}
+    #frame_subtitles_position = {index:[coords for coords in positions if is_valid_coordinate(coords[0],coords[1],min_area=min_area)] for index, positions in frame_subtitles_position.items()}
 
     # get all coordinates
     all_coords = [coord for result in frame_subtitles_position.values() for coord in result]

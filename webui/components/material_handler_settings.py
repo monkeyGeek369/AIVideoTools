@@ -28,7 +28,10 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     subtitle_split_checkbox_value = None
     bg_music_split_checkbox_value = None
     subtitle_position_recognize_checkbox_value = None
-    ignore_subtitle_area = None
+    ignore_min_width = None
+    ignore_min_height = None
+    ignore_min_word_count = None
+    ignore_text = None
     min_subtitle_merge_distance = None
     sub_rec_area = None
     subtitle_ocr_filter_checkbox_value = None
@@ -51,18 +54,22 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     column4,column5,column6 = container2.columns(3)
     with column4:
         subtitle_position_recognize_checkbox_value = column4.checkbox(label=tr("subtitle_position_recognize"),key="subtitle_position_recognize",value=True)
-        sub_rec_params_container,sub_area_container = column4.columns(2)
-        with sub_rec_params_container:
-            ignore_subtitle_area = sub_rec_params_container.text_input(label=tr("ignore_subtitle_area"),key="ignore_subtitle_area",value=5000)
-            min_subtitle_merge_distance = sub_rec_params_container.text_input(label=tr("min_subtitle_merge_distance"),key="min_subtitle_merge_distance",value=100)
-        with sub_area_container:
+        subtitle_position_container = column4.container(border=True)
+        spc_lift,spc_right = subtitle_position_container.columns(2)
+        with spc_lift:
+            min_subtitle_merge_distance = spc_lift.text_input(label=tr("min_subtitle_merge_distance"),key="min_subtitle_merge_distance",value=100)
+            ignore_min_width = spc_lift.text_input(label=tr("ignore_min_width"),key="ignore_min_width",value=120)
+            ignore_min_height = spc_lift.text_input(label=tr("ignore_min_height"),key="ignore_min_height",value=80)
+            ignore_min_word_count = spc_lift.text_input(label=tr("ignore_min_word_count"),key="ignore_min_word_count",value=2)
+        with spc_right:
             sub_rec_area_options = [
                 (tr("full_area"), "full_area"),
                 (tr("upper_part_area"), "upper_part_area"),
                 (tr("lower_part_area"), "lower_part_area"),
             ]
-            sub_rec_area_selected = sub_area_container.radio(label=tr("subtitle_recognize_area"),options=[item[0] for item in sub_rec_area_options],index=0,key="subtitle_recognize_area")
+            sub_rec_area_selected = spc_right.radio(label=tr("subtitle_recognize_area"),options=[item[0] for item in sub_rec_area_options],index=0,key="subtitle_recognize_area")
             sub_rec_area = [item for item in sub_rec_area_options if item[0] == sub_rec_area_selected][0][1]
+            ignore_text = spc_right.text_area(label=tr("ignore_text"),key="ignore_text",value="请勿模仿\n国外合法饲养请勿\n勿模仿\n视频仅供娱乐\n素材来源网络")
     with column5:
         subtitle_auto_mosaic_checkbox_value = column5.checkbox(label=tr("subtitle_auto_mosaic"),key="subtitle_auto_mosaic",value=True)
 
@@ -88,11 +95,13 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                                                       bg_music_split_checkbox_value,
                                                       container_dict,
                                                       subtitle_position_recognize_checkbox_value,
-                                                      ignore_subtitle_area,
                                                       min_subtitle_merge_distance,
                                                       sub_rec_area,
                                                       subtitle_ocr_filter_checkbox_value,
-                                                      subtitle_auto_mosaic_checkbox_value)
+                                                      subtitle_auto_mosaic_checkbox_value,
+                                                    ignore_min_width,
+                                                    ignore_min_height,
+                                                    ignore_min_word_count)
                     st.success(tr("material_handler_submit_success"))
                 except Exception as e:
                     logger.error(tr("material_handler_submit_error")+": "+str(e))
@@ -117,9 +126,12 @@ def save_uploaded_origin_videos(videos:list[UploadedFile]):
         file_utils.save_uploaded_file(uploaded_file=video_item,save_dir=origin_videos,allowed_types=['.mp4','.webm'])
 
 def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_subtitles:bool,split_bg_musics:bool,container_dict:dict[str,DeltaGenerator],
-                                      subtitle_position_recognize:bool,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str,
+                                      subtitle_position_recognize:bool,min_subtitle_merge_distance:int,sub_rec_area:str,
                                       subtitle_ocr_filter:bool,
-                                      subtitle_auto_mosaic_checkbox_value:bool):
+                                      subtitle_auto_mosaic_checkbox_value:bool,
+                                                    ignore_min_width:int,
+                                                    ignore_min_height:int,
+                                                    ignore_min_word_count:int):
     # get task path
     task_path = st.session_state['task_path']
     recognize_position_model = None
@@ -169,7 +181,8 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
         if split_bg_musics:
             pass
         if subtitle_position_recognize:
-            recognize_position_model = recognize_subtitle_position(video_path,int(ignore_subtitle_area),int(min_subtitle_merge_distance),sub_rec_area)
+            recognize_position_model = recognize_subtitle_position(video_path,int(min_subtitle_merge_distance),sub_rec_area,
+                                                                   int(ignore_min_width),int(ignore_min_height),int(ignore_min_word_count))
         if split_subtitles and os.path.exists(subtitle_file_path) and subtitle_ocr_filter:
             subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
         if subtitle_auto_mosaic_checkbox_value:
@@ -243,9 +256,12 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
         )
 
 
-def recognize_subtitle_position(video_path:str,ignore_subtitle_area:int,min_subtitle_merge_distance:int,sub_rec_area:str):
+def recognize_subtitle_position(video_path:str,min_subtitle_merge_distance:int,sub_rec_area:str,
+                                                    ignore_min_width:int,
+                                                    ignore_min_height:int,
+                                                    ignore_min_word_count:int):
     # get subtitle position
-    position_dict = video.video_subtitle_overall_statistics(video_path,ignore_subtitle_area,min_subtitle_merge_distance,sub_rec_area)
+    position_dict = video.video_subtitle_overall_statistics(video_path,min_subtitle_merge_distance,sub_rec_area,ignore_min_width,ignore_min_height,ignore_min_word_count)
 
     coord = None
     if position_dict:

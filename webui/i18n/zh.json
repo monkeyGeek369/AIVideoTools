@@ -104,7 +104,6 @@
     "stroke_color":"描边颜色",
     "stroke_width":"描边宽度",
     "subtitle_position_recognize":"识别字幕位置",
-    "ignore_subtitle_area":"忽略字幕区域面积（像素）",
     "min_subtitle_merge_distance":"最小字幕合并距离（像素）",
     "subtitle_position":"字幕位置",
     "subtitle_position_tips":"字幕位置展示列表",
@@ -126,6 +125,10 @@
     "subtitle_ocr_filter":"OCR过滤字幕(勾选识别字幕时生效)",
     "subtitle_auto_mosaic":"自动马赛克字幕",
     "bgm_style":"背景音乐风格",
-    "bg_music_not_config":"背景音乐未配置,请在resource/bgm中配置"
+    "bg_music_not_config":"背景音乐未配置,请在resource/bgm中配置",
+    "ignore_min_width":"可忽略最小宽度（像素）",
+    "ignore_min_height":"可忽略最小高度（像素）",
+    "ignore_min_word_count":"可忽略最少字数",
+    "ignore_text":"忽略文本"
   }
 }
