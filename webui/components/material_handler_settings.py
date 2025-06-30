@@ -34,16 +34,21 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
     subtitle_ocr_filter_checkbox_value = None
     subtitle_auto_mosaic_checkbox_value = None
 
-    # create checkbox
-    split_container=material_handler_form.container()
-    column1,column2,column3,column4 = split_container.columns(4)
+    # create container1
+    container1=material_handler_form.container(border=True)
+    column1,column2,column3 = container1.columns(3)
     with column1:
         video_split_checkbox_value = column1.checkbox(label=tr("video_split"),key="video_split",value=True)
     with column2:
         voice_split_checkbox_value = column2.checkbox(label=tr("voice_split"),key="voice_split",value=True)
     with column3:
         subtitle_split_checkbox_value = column3.checkbox(label=tr("subtitle_split"),key="subtitle_split",value=True)
-        subtitle_ocr_filter_checkbox_value = column3.checkbox(label=tr("subtitle_ocr_filter"),key="subtitle_ocr_filter",value=True)
+        subtitle_split_container = column3.container(border=True)
+        subtitle_ocr_filter_checkbox_value = subtitle_split_container.checkbox(label=tr("subtitle_ocr_filter"),key="subtitle_ocr_filter",value=True)
+    
+    # create container2
+    container2=material_handler_form.container(border=True)
+    column4,column5,column6 = container2.columns(3)
     with column4:
         subtitle_position_recognize_checkbox_value = column4.checkbox(label=tr("subtitle_position_recognize"),key="subtitle_position_recognize",value=True)
         sub_rec_params_container,sub_area_container = column4.columns(2)
@@ -57,12 +62,13 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
                 (tr("lower_part_area"), "lower_part_area"),
             ]
             sub_rec_area_selected = sub_area_container.radio(label=tr("subtitle_recognize_area"),options=[item[0] for item in sub_rec_area_options],index=0,key="subtitle_recognize_area")
-            subtitle_auto_mosaic_checkbox_value = sub_area_container.checkbox(label=tr("subtitle_auto_mosaic"),key="subtitle_auto_mosaic",value=True)
             sub_rec_area = [item for item in sub_rec_area_options if item[0] == sub_rec_area_selected][0][1]
+    with column5:
+        subtitle_auto_mosaic_checkbox_value = column5.checkbox(label=tr("subtitle_auto_mosaic"),key="subtitle_auto_mosaic",value=True)
 
     # create submit button
     submitted = material_handler_form.form_submit_button(label=tr("material_handler_submit"))
-    with split_container:
+    with material_handler_form.container():
         #print(sub_rec_area)
         with st.spinner(tr("processing")):
             if submitted:
