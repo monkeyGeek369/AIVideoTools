@@ -103,38 +103,26 @@ def calculate_subtitle_position(position, video_height: int, custom_position: fl
     # 默认底部
     return ('center', SubtitlePosition.BOTTOM)
 
-def video_subtitle_overall_statistics(video_path:str,distance_threshold:int,sub_rec_area:str,
-                                                    ignore_min_width:int,
-                                                    ignore_min_height:int,
-                                                    ignore_min_word_count:int) -> dict:
-    '''
-    video_path: video file path
-
-    return: dict[str,int]
-        left_top_x:int
-        left_top_y:int
-        right_bottom_x:int
-        right_bottom_y:int
-        count:int
-        frame_subtitles_position:dict[float,list[tuple[tuple[int,int],tuple[int,int]]]]
-    '''
+def video_subtitle_overall_statistics(video_path:str,
+                                    distance_threshold:int,
+                                    sub_rec_area:str,
+                                    ignore_min_width:int,
+                                    ignore_min_height:int,
+                                    ignore_min_word_count:int,
+                                    ignore_text:str) -> dict:
     # frames coordinates
     task_path = st.session_state['task_path']
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
-    ignore_text = ["请勿模仿","国外合法饲养请勿","勿模仿","视频仅供娱乐","素材来源网络"]
     frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
 
-    # filter frames coordinates by sub rec area
+    # filter: sub_rec_area
     frame_subtitles_position = subtitle.filter_frame_subtitles_position_by_area(sub_rec_area,frame_subtitles_position)
+
+    # filter: ignore min width, height, word count,ignore text
+    frame_subtitles_position = subtitle.filter_frame_subtitles_position(ignore_min_width, ignore_min_height, ignore_min_word_count, ignore_text, frame_subtitles_position)
 
     # get frame_time_text_dict
     frame_time_text_dict = {t: [coord[2] for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
-
-    # filter ignore text
-    frame_subtitles_position = {result.get("index"): [(coord[0], coord[1]) for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
-
-    # filter by min_area
-    #frame_subtitles_position = {index:[coords for coords in positions if is_valid_coordinate(coords[0],coords[1],min_area=min_area)] for index, positions in frame_subtitles_position.items()}
 
     # get all coordinates
     all_coords = [coord for result in frame_subtitles_position.values() for coord in result]
@@ -167,27 +155,6 @@ def video_subtitle_overall_statistics(video_path:str,distance_threshold:int,sub_
         }
     else:
         return None
-
-def is_valid_coordinate(top_left, bottom_right, min_area=100):
-    '''
-    valid coordinate area >= min_area
-    '''
-    x1, y1 = top_left
-    x2, y2 = bottom_right
-    if x1 >= x2 or y1 >= y2:
-        return False
-    area = (x2 - x1) * (y2 - y1)
-    return area >= min_area
-
-def filter_coordinates(coords,min_area:int):
-    '''
-    filter invalid coordinates
-    '''
-    valid_coords = []
-    for top_left, bottom_right in coords:
-        if is_valid_coordinate(top_left, bottom_right,min_area=min_area):
-            valid_coords.append((top_left, bottom_right))
-    return valid_coords
 
 def distance(coord1, coord2):
     '''
@@ -263,7 +230,12 @@ def is_overlap_over_half(base_rect, other_rect):
     # 判断重叠面积是否超过其他矩形面积的50%
     return overlap_area > 0.5 * other_area
 
-def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositionCoord|None):
+def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositionCoord|None,
+                                                    all_mosaic:bool,
+                                                    title_mosaic:bool,
+                                                    warning_mosaic:bool,
+                                                    subtitle_mosaic:bool,
+                                                    other_mosaic:bool):
     '''
     auto recognize subtitle and mosaic
     subtitle position within the range subtitle_position_coord

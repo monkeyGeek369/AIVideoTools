@@ -129,6 +129,11 @@
     "ignore_min_width":"ignore min width(pixel)",
     "ignore_min_height":"ignore min height(pixel)",
     "ignore_min_word_count":"ignore min word count",
-    "ignore_text":"ignore text"
+    "ignore_text":"ignore text",
+    "all_mosaic":"all mosaic",
+    "title_mosaic":"title mosaic",
+    "warning_mosaic":"warning mosaic",
+    "subtitle_mosaic":"subtitle mosaic",
+    "other_mosaic":"other mosaic"
   }
 }

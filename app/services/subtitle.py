@@ -545,3 +545,30 @@ def subtitle_llm_handler(base_url:str,
         item["index"] = i
 
     return subtitle_list
+
+def filter_frame_subtitles_position(ignore_min_width:int,
+                                    ignore_min_height:int,
+                                    ignore_min_word_count:int,
+                                    ignore_text:str,
+                                    frame_subtitles_position:dict[float,dict]) -> dict:
+    for t, result in frame_subtitles_position.items():
+        index,coordinates = result.get("index"),result.get("coordinates")
+
+        # filter: ignore min width
+        coordinates = [ coord for coord in coordinates if (coord[1][0] - coord[0][0] >= ignore_min_width)]
+        # filter: ignore min height
+        coordinates = [ coord for coord in coordinates if (coord[1][1] - coord[0][1] >= ignore_min_height)]
+        # filter: ignore min word count
+        coordinates = [ coord for coord in coordinates if (len(coord[2]) >= ignore_min_word_count)]
+        # filter: ignore text
+        texts = ignore_text.split("\n") if ignore_text else []
+        coordinates = [ coord for coord in coordinates if (not str_util.is_str_contain_list_strs(coord[2],texts))]
+
+        # update result
+        frame_subtitles_position[t] = {
+            "index": index,
+            "coordinates": coordinates
+        }
+
+    return frame_subtitles_position
+
