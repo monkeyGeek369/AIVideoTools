@@ -9,6 +9,7 @@ from app.models.subtitle_position_coord import SubtitlePositionCoord
 from app.services import mosaic,paddleocr,subtitle
 from app.utils import str_util
 import streamlit as st
+import json
 
 def wrap_text(text, max_width, font, fontsize=60):
     """
@@ -114,6 +115,7 @@ def video_subtitle_overall_statistics(video_path:str,
     task_path = st.session_state['task_path']
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
     frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
+    #print(json.dumps(frame_subtitles_position, indent=4, ensure_ascii=False))
 
     # filter: sub_rec_area
     frame_subtitles_position = subtitle.filter_frame_subtitles_position_by_area(sub_rec_area,frame_subtitles_position)

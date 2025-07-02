@@ -26,7 +26,7 @@ def split_video_every_seconds(input_video_path, output_folder,split_duration=5):
 
 
 if __name__ == "__main__":
-    split_video_every_seconds("/home/monkeygeek/Downloads/蒙古格格.webm", "/home/monkeygeek/视频/test_split_video",split_duration=5)
+    split_video_every_seconds("/Users/monkeygeek/Downloads/test11.webm", "/Users/monkeygeek/Downloads",split_duration=1)
 
 
 
