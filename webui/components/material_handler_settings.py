@@ -212,10 +212,12 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
         if split_bg_musics:
             pass
         if subtitle_position_recognize:
-            recognize_position_model = recognize_subtitle_position(
+            recognize_position_model = video.video_subtitle_overall_statistics(
                 video_path,int(min_subtitle_merge_distance),sub_rec_area,
                 int(ignore_min_width),int(ignore_min_height),int(ignore_min_word_count),
                 warning_text,title_merge_distance,warning_merge_distance)
+            # todo
+            
         if split_subtitles and os.path.exists(subtitle_file_path) and subtitle_ocr_filter:
             subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
         if subtitle_auto_mosaic_checkbox_value:

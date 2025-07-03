@@ -65,11 +65,14 @@ def video_subtitle_overall_statistics(video_path:str,
     # dectect subtitle position
     fixed_regions = text_coordinate.text_coordinate_recognize_video(frame_subtitles_position, video_width, video_height, video_fps,video_duration,warning_text,title_merge_distance,warning_merge_distance,subtitle_merge_distance)
 
-    return {
-        "fixed_regions": fixed_regions,
-        "time_index":{t:result["index"] for t,result in frame_subtitles_position.items()},
-        "frames":{result["index"]:{"t":t,"text_regions":result["coordinates"]} for t,result in frame_subtitles_position.items()}
-    }
+    if not fixed_regions:
+        return SubtitlePositionCoord(is_exist=False)
+    else:
+        return SubtitlePositionCoord(is_exist=True,
+                                     fixed_regions=fixed_regions,
+                                     time_index={t:result["index"] for t,result in frame_subtitles_position.items()},
+                                     frames={result["index"]:{"t":t,"text_regions":result["coordinates"]} for t,result in frame_subtitles_position.items()}
+                                     )
 
 def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositionCoord|None,
                                                     all_mosaic:bool,
