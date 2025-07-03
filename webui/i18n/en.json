@@ -134,6 +134,8 @@
     "title_mosaic":"title mosaic",
     "warning_mosaic":"warning mosaic",
     "subtitle_mosaic":"subtitle mosaic",
-    "other_mosaic":"other mosaic"
+    "other_mosaic":"other mosaic",
+    "title_merge_distance":"title merge distance (pixel)",
+    "warning_merge_distance":"warning merge distance (pixel)"
   }
 }

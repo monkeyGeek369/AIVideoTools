@@ -65,10 +65,10 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
         spc_lift,spc_right = subtitle_position_container.columns(2)
         with spc_lift:
             min_subtitle_merge_distance = spc_lift.text_input(label=tr("min_subtitle_merge_distance"),key="min_subtitle_merge_distance",value=100)
-            title_merge_distance = spc_lift.text_input(label=tr("title_merge_distance"),key="title_merge_distance",value=100)
-            warning_merge_distance = spc_lift.text_input(label=tr("warning_merge_distance"),key="warning_merge_distance",value=100)
-            ignore_min_width = spc_lift.text_input(label=tr("ignore_min_width"),key="ignore_min_width",value=120)
-            ignore_min_height = spc_lift.text_input(label=tr("ignore_min_height"),key="ignore_min_height",value=80)
+            title_merge_distance = spc_lift.text_input(label=tr("title_merge_distance"),key="title_merge_distance",value=200)
+            warning_merge_distance = spc_lift.text_input(label=tr("warning_merge_distance"),key="warning_merge_distance",value=150)
+            ignore_min_width = spc_lift.text_input(label=tr("ignore_min_width"),key="ignore_min_width",value=100)
+            ignore_min_height = spc_lift.text_input(label=tr("ignore_min_height"),key="ignore_min_height",value=30)
         with spc_right:
             ignore_min_word_count = spc_right.text_input(label=tr("ignore_min_word_count"),key="ignore_min_word_count",value=2)
             sub_rec_area_options = [
@@ -78,7 +78,7 @@ def render_material_handler(tr,st_container:DeltaGenerator,container_dict:dict[s
             ]
             sub_rec_area_selected = spc_right.radio(label=tr("subtitle_recognize_area"),options=[item[0] for item in sub_rec_area_options],index=0,key="subtitle_recognize_area")
             sub_rec_area = [item for item in sub_rec_area_options if item[0] == sub_rec_area_selected][0][1]
-            warning_text = spc_right.text_area(label=tr("warning_text"),key="warning_text",value="请勿模仿\n国外合法饲养请勿\n勿模仿\n视频仅供娱乐\n素材来源网络")
+            warning_text = spc_right.text_area(label=tr("warning_text"),key="warning_text",value="勿模仿\n视频仅供\n素材来源")
     with column5:
         subtitle_auto_mosaic_checkbox_value = column5.checkbox(label=tr("subtitle_auto_mosaic"),key="subtitle_auto_mosaic",value=True)
         subtitle_mosaic_container = column5.container(border=True)
@@ -185,62 +185,62 @@ def split_material_from_origin_videos(split_videos:bool,split_voices:bool,split_
     origin_videos = file_utils.get_file_list(directory=origin_videos)
     if not origin_videos:
         raise Exception("origin videos is empty")
+    if len(origin_videos) > 1:
+        raise Exception("only support one origin video")
 
     # split origin videos
-    video_duration = 0
-    for origin_video in origin_videos:
-        video_name = video.remove_video_titile_spe_chars(origin_video.name)
-        if split_videos:
-            video_clip = VideoFileClip(origin_video.path)
-            video_clip = video_clip.without_audio()
-            video_path = os.path.join(material_videos_path,video_name+".mp4")
-            temp_video_path = os.path.join(material_videos_path,video_name+"_temp.mp4")
-            video.video_clip_to_video(video_clip,video_path,video_clip.fps)
-            st.session_state['video_height'] = video_clip.h
-            st.session_state['video_width'] = video_clip.w
-            st.session_state['video_fps'] = video_clip.fps
-            video_duration += video_clip.duration
-            video_clip.close()
-        audio_file_path = os.path.join(material_voices_path,video_name+".wav")
-        subtitle_file_path = os.path.join(material_subtitles_path,video_name+".srt")
-        if split_voices:
+    origin_video = origin_videos[0]
+    video_name = video.remove_video_titile_spe_chars(origin_video.name)
+    if split_videos:
+        video_clip = VideoFileClip(origin_video.path)
+        video_clip = video_clip.without_audio()
+        video_path = os.path.join(material_videos_path,video_name+".mp4")
+        temp_video_path = os.path.join(material_videos_path,video_name+"_temp.mp4")
+        video.video_clip_to_video(video_clip,video_path,video_clip.fps)
+        st.session_state['video_height'] = video_clip.h
+        st.session_state['video_width'] = video_clip.w
+        st.session_state['video_fps'] = video_clip.fps
+        st.session_state['video_duration'] = video_clip.duration
+        video_clip.close()
+    audio_file_path = os.path.join(material_voices_path,video_name+".wav")
+    subtitle_file_path = os.path.join(material_subtitles_path,video_name+".srt")
+    if split_voices:
+        audio.get_audio_from_video(origin_video.path,audio_file_path)
+    if split_subtitles:
+        if not os.path.exists(audio_file_path):
             audio.get_audio_from_video(origin_video.path,audio_file_path)
-        if split_subtitles:
-            if not os.path.exists(audio_file_path):
-                audio.get_audio_from_video(origin_video.path,audio_file_path)
-            subtitle.create(audio_file_path, subtitle_file_path)
-        if split_bg_musics:
-            pass
-        if subtitle_position_recognize:
-            recognize_position_model = video.video_subtitle_overall_statistics(
-                video_path,int(min_subtitle_merge_distance),sub_rec_area,
-                int(ignore_min_width),int(ignore_min_height),int(ignore_min_word_count),
-                warning_text,title_merge_distance,warning_merge_distance)
-            # todo
+        subtitle.create(audio_file_path, subtitle_file_path)
+    if split_bg_musics:
+        pass
+    if subtitle_position_recognize:
+        recognize_position_model = video.video_subtitle_overall_statistics(
+            video_path,int(min_subtitle_merge_distance),sub_rec_area,
+            int(ignore_min_width),int(ignore_min_height),int(ignore_min_word_count),
+            warning_text.split("\n"),int(title_merge_distance),int(warning_merge_distance))
+        # save subtitle position
+        subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
+        subtitle_position_dict["edit_video.mp4"] = recognize_position_model
+        st.session_state['subtitle_position_dict'] = subtitle_position_dict
+    if split_subtitles and os.path.exists(subtitle_file_path) and subtitle_ocr_filter:
+        subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
+    if subtitle_auto_mosaic_checkbox_value:
+        with VideoFileClip(video_path) as mosaic_video_clip:
+            mosaic_result_clip = video.video_subtitle_mosaic_auto(
+                video_clip=mosaic_video_clip,
+                subtitle_position_coord=recognize_position_model,
+                all_mosaic=all_mosaic,
+                title_mosaic=title_mosaic,
+                warning_mosaic=warning_mosaic,
+                subtitle_mosaic=subtitle_mosaic,
+                other_mosaic=other_mosaic
+            )
             
-        if split_subtitles and os.path.exists(subtitle_file_path) and subtitle_ocr_filter:
-            subtitle.remove_valid_subtitles_by_ocr(subtitle_path=subtitle_file_path)
-        if subtitle_auto_mosaic_checkbox_value:
-            with VideoFileClip(video_path) as mosaic_video_clip:
-                mosaic_result_clip = video.video_subtitle_mosaic_auto(
-                    video_clip=mosaic_video_clip,
-                    subtitle_position_coord=recognize_position_model,
-                    all_mosaic=all_mosaic,
-                    title_mosaic=title_mosaic,
-                    warning_mosaic=warning_mosaic,
-                    subtitle_mosaic=subtitle_mosaic,
-                    other_mosaic=other_mosaic
-                )
-                
-                video.video_clip_to_video(mosaic_result_clip, temp_video_path,mosaic_video_clip.fps)
-                mosaic_result_clip.close()
-                
-                if os.path.exists(temp_video_path) and os.path.getsize(temp_video_path) > 0:
-                    os.remove(video_path)
-                    os.rename(temp_video_path, video_path)
-
-    # add data
-    st.session_state['video_duration'] = video_duration
+            video.video_clip_to_video(mosaic_result_clip, temp_video_path,mosaic_video_clip.fps)
+            mosaic_result_clip.close()
+            
+            if os.path.exists(temp_video_path) and os.path.getsize(temp_video_path) > 0:
+                os.remove(video_path)
+                os.rename(temp_video_path, video_path)
 
     # show material
     show_materials(container_dict["material_video_expander"],container_dict["material_bg_music_expander"],
@@ -295,40 +295,4 @@ def show_materials(video_container:DeltaGenerator,bg_music_container:DeltaGenera
             key=file_name
         )
 
-
-def recognize_subtitle_position(video_path:str,min_subtitle_merge_distance:int,sub_rec_area:str,
-                                                    ignore_min_width:int,
-                                                    ignore_min_height:int,
-                                                    ignore_min_word_count:int,
-                                                    warning_text:str,
-                                                    title_merge_distance:int,
-                                                    warning_merge_distance:int):
-    # get subtitle position
-    position_dict = video.video_subtitle_overall_statistics(video_path,min_subtitle_merge_distance,sub_rec_area,
-                                                            ignore_min_width,ignore_min_height,ignore_min_word_count,
-                                                    warning_text,
-                                                    title_merge_distance,
-                                                    warning_merge_distance)
-
-    coord = None
-    if position_dict:
-        coord = SubtitlePositionCoord(
-            is_exist=True,
-            left_top_x=position_dict["left_top_x"],
-            left_top_y=position_dict["left_top_y"],
-            right_bottom_x=position_dict["right_bottom_x"],
-            right_bottom_y=position_dict["right_bottom_y"],
-            count=position_dict["count"],
-            frame_subtitles_position=position_dict["frame_subtitles_position"],
-            frame_time_text_dict=position_dict["frame_time_text_dict"]
-            )
-    else:
-        coord = SubtitlePositionCoord(is_exist=False)
-
-    # save subtitle position
-    subtitle_position_dict = st.session_state.get('subtitle_position_dict', {})
-    subtitle_position_dict["edit_video.mp4"] = coord
-    st.session_state['subtitle_position_dict'] = subtitle_position_dict
-
-    return coord
 

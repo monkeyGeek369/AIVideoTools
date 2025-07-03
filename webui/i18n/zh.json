@@ -134,6 +134,8 @@
     "title_mosaic":"标题马赛克",
     "warning_mosaic":"警告马赛克",
     "subtitle_mosaic":"字幕马赛克",
-    "other_mosaic":"其他马赛克"
+    "other_mosaic":"其他马赛克",
+    "title_merge_distance":"标题合并距离（像素）",
+    "warning_merge_distance":"警示合并距离（像素）"
   }
 }

@@ -59,7 +59,7 @@ def text_coordinate_recognize_video(video_frames_coordinates:dict,
         "subtitle": subtitle_region
     }
 
-def detect_text_regions(coordinates:dict, video_width:int, video_height:int, warning_keywords:list[str]) -> tuple[dict,dict,list]:
+def detect_text_regions(coordinates:list, video_width:int, video_height:int, warning_keywords:list[str]) -> tuple[dict,dict,list]:
     if not coordinates:
         return None,None,None
 
@@ -74,7 +74,7 @@ def detect_text_regions(coordinates:dict, video_width:int, video_height:int, war
     warning_side_threshold = video_width * 0.3  # 警示区域边界
     
     # detect
-    for frame_idx, frame_data in enumerate(coordinates):
+    for frame_idx, frame_data in coordinates:
         for (top_left, bottom_right, text) in frame_data:
             x1, y1 = top_left
             x2, y2 = bottom_right
