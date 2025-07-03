@@ -561,8 +561,9 @@ def filter_frame_subtitles_position(ignore_min_width:int,
         # filter: ignore min word count
         coordinates = [ coord for coord in coordinates if (len(coord[2]) >= ignore_min_word_count)]
         # filter: ignore text
-        texts = ignore_text.split("\n") if ignore_text else []
-        coordinates = [ coord for coord in coordinates if (not str_util.is_str_contain_list_strs(coord[2],texts))]
+        if ignore_text:
+            texts = ignore_text.split("\n") if ignore_text else []
+            coordinates = [ coord for coord in coordinates if (not str_util.is_str_contain_list_strs(coord[2],texts))]
 
         # update result
         frame_subtitles_position[t] = {

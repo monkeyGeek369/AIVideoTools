@@ -6,78 +6,10 @@ import os,shutil,random,re
 from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
-from app.services import mosaic,paddleocr,subtitle
+from app.services import mosaic,paddleocr,subtitle,text_coordinate
 from app.utils import str_util
 import streamlit as st
 import json
-
-def wrap_text(text, max_width, font, fontsize=60):
-    """
-    文本自动换行处理
-    Args:
-        text: 待处理的文本
-        max_width: 最大宽度
-        font: 字体文件路径
-        fontsize: 字体大小
-
-    Returns:
-        tuple: (换行后的文本, 文本高度)
-    """
-    # 创建字体对象
-    font = ImageFont.truetype(font, fontsize)
-
-    def get_text_size(inner_text):
-        inner_text = inner_text.strip()
-        left, top, right, bottom = font.getbbox(inner_text)
-        return right - left, bottom - top
-
-    width, height = get_text_size(text)
-    if width <= max_width:
-        return text, height
-
-    logger.debug(f"换行文本, 最大宽度: {max_width}, 文本宽度: {width}, 文本: {text}")
-
-    processed = True
-
-    _wrapped_lines_ = []
-    words = text.split(" ")
-    _txt_ = ""
-    for word in words:
-        _before = _txt_
-        _txt_ += f"{word} "
-        _width, _height = get_text_size(_txt_)
-        if _width <= max_width:
-            continue
-        else:
-            if _txt_.strip() == word.strip():
-                processed = False
-                break
-            _wrapped_lines_.append(_before)
-            _txt_ = f"{word} "
-    _wrapped_lines_.append(_txt_)
-    if processed:
-        _wrapped_lines_ = [line.strip() for line in _wrapped_lines_]
-        result = "\n".join(_wrapped_lines_).strip()
-        height = len(_wrapped_lines_) * height
-        # logger.warning(f"wrapped text: {result}")
-        return result, height
-
-    _wrapped_lines_ = []
-    chars = list(text)
-    _txt_ = ""
-    for word in chars:
-        _txt_ += word
-        _width, _height = get_text_size(_txt_)
-        if _width <= max_width:
-            continue
-        else:
-            _wrapped_lines_.append(_txt_)
-            _txt_ = ""
-    _wrapped_lines_.append(_txt_)
-    result = "\n".join(_wrapped_lines_).strip()
-    height = len(_wrapped_lines_) * height
-    logger.debug(f"换行文本: {result}")
-    return result, height
 
 def calculate_subtitle_position(position, video_height: int, custom_position: float = 0) -> tuple:
     """
@@ -105,132 +37,39 @@ def calculate_subtitle_position(position, video_height: int, custom_position: fl
     return ('center', SubtitlePosition.BOTTOM)
 
 def video_subtitle_overall_statistics(video_path:str,
-                                    distance_threshold:int,
+                                    subtitle_merge_distance:int,
                                     sub_rec_area:str,
                                     ignore_min_width:int,
                                     ignore_min_height:int,
                                     ignore_min_word_count:int,
-                                    ignore_text:str) -> dict:
-    # frames coordinates
+                                    warning_text:str,
+                                    title_merge_distance:int,
+                                    warning_merge_distance:int) -> dict:
+    # get base info
+    video_width = st.session_state['video_width']
+    video_height = st.session_state['video_height']
+    video_fps = st.session_state['video_fps']
     task_path = st.session_state['task_path']
+    video_duration = st.session_state['video_duration']
+
+    # frames coordinates
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
     frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
-    #print(json.dumps(frame_subtitles_position, indent=4, ensure_ascii=False))
 
     # filter: sub_rec_area
     frame_subtitles_position = subtitle.filter_frame_subtitles_position_by_area(sub_rec_area,frame_subtitles_position)
 
     # filter: ignore min width, height, word count,ignore text
-    frame_subtitles_position = subtitle.filter_frame_subtitles_position(ignore_min_width, ignore_min_height, ignore_min_word_count, ignore_text, frame_subtitles_position)
+    frame_subtitles_position = subtitle.filter_frame_subtitles_position(ignore_min_width, ignore_min_height, ignore_min_word_count, None, frame_subtitles_position)
 
-    # get frame_time_text_dict
-    frame_time_text_dict = {t: [coord[2] for coord in result.get("coordinates") if (coord is not None and not str_util.is_str_contain_list_strs(coord[2],ignore_text))] for t, result in frame_subtitles_position.items()}
+    # dectect subtitle position
+    fixed_regions = text_coordinate.text_coordinate_recognize_video(frame_subtitles_position, video_width, video_height, video_fps,video_duration,warning_text,title_merge_distance,warning_merge_distance,subtitle_merge_distance)
 
-    # get all coordinates
-    all_coords = [coord for result in frame_subtitles_position.values() for coord in result]
-
-    # merge coordinates
-    merged_counts = merge_coordinates_with_count(all_coords,threshold=distance_threshold)
-
-    # get most common region
-    if merged_counts:
-        max_count = max(merged_counts.values())
-        most_common_regions = [region for region, count in merged_counts.items() if count == max_count]
-        most_common_region = most_common_regions[0]
-
-        # 根据统计区域过滤每一帧的字幕区域
-        for index, position in frame_subtitles_position.items():
-            frame_coords = []
-            for coord in position:
-                frame_coords.append((coord[0], coord[1],(coord[1][0] - coord[0][0])*(coord[1][1] - coord[0][1])))
-            if frame_coords and len(frame_coords) >= 0:
-                frame_subtitles_position[index] = frame_coords
-
-        return {
-            "left_top_x": most_common_region[0][0],
-            "left_top_y": most_common_region[0][1],
-            "right_bottom_x": most_common_region[1][0],
-            "right_bottom_y": most_common_region[1][1],
-            "count": max_count,
-            "frame_subtitles_position":frame_subtitles_position,
-            "frame_time_text_dict":frame_time_text_dict
-        }
-    else:
-        return None
-
-def distance(coord1, coord2):
-    '''
-    Calculate the distance between the centers of two rectangles.
-    Each rectangle is defined by its two diagonal points.
-    '''
-    # 解析矩形的对角点坐标
-    (x1, y1), (x2, y2) = coord1
-    (x3, y3), (x4, y4) = coord2
-
-    # 计算两个矩形的中心点坐标
-    center1_x = (x1 + x2) / 2
-    center1_y = (y1 + y2) / 2
-    center2_x = (x3 + x4) / 2
-    center2_y = (y3 + y4) / 2
-
-    # 计算两个中心点之间的欧几里得距离
-    distance = ((center1_x - center2_x) ** 2 + (center1_y - center2_y) ** 2) ** 0.5
-    return distance
-    
-def merge_coordinates_with_count(coords, threshold=100):
-    '''
-    merge coordinates and get region counts
-    '''
-    # 使用字典记录每个合并后区域的出现次数
-    region_counts = defaultdict(int)
-    merged_coords = []
-
-    for coord in coords:
-        merged = False
-        for i, merged_coord in enumerate(merged_coords):
-            if distance(coord, merged_coord) < threshold:
-                merged_coords[i] = (
-                    (int(min(merged_coord[0][0],coord[0][0])), int(min(merged_coord[0][1],coord[0][1]))),
-                    (int(max(merged_coord[1][0],coord[1][0])), int(max(merged_coord[1][1],coord[1][1])))
-                )
-                region_counts[i] += 1
-                merged = True
-                break
-        if not merged:
-            region_counts[len(merged_coords)] += 1
-            merged_coords.append(coord)
-            
-    return {tuple(coord): count for coord, count in zip(merged_coords, region_counts.values())}
-
-def is_overlap_over_half(base_rect, other_rect):
-    '''
-     judge if overlap over half of base_rect
-    '''
-
-    # 解析基础矩形和其他矩形的坐标
-    (base_left, base_top), (base_right, base_bottom) = base_rect
-    (other_left, other_top), (other_right, other_bottom) = other_rect
-
-    # 计算重叠区域的坐标
-    overlap_left = max(base_left, other_left)
-    overlap_top = max(base_top, other_top)
-    overlap_right = min(base_right, other_right)
-    overlap_bottom = min(base_bottom, other_bottom)
-
-    # 计算重叠区域的宽度和高度
-    overlap_width = overlap_right - overlap_left
-    overlap_height = overlap_bottom - overlap_top
-
-    # 判断是否有重叠
-    if overlap_width <= 0 or overlap_height <= 0:
-        return False
-
-    # 计算重叠面积和其他矩形的面积
-    overlap_area = overlap_width * overlap_height
-    other_area = (other_right - other_left) * (other_bottom - other_top)
-
-    # 判断重叠面积是否超过其他矩形面积的50%
-    return overlap_area > 0.5 * other_area
+    return {
+        "fixed_regions": fixed_regions,
+        "time_index":{t:result["index"] for t,result in frame_subtitles_position.items()},
+        "frames":{result["index"]:{"t":t,"text_regions":result["coordinates"]} for t,result in frame_subtitles_position.items()}
+    }
 
 def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositionCoord|None,
                                                     all_mosaic:bool,
@@ -261,34 +100,6 @@ def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositi
 
     # load video
     return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position,fps))
-
-def recognize_subtitle_and_mosaic(frame,base_rect,reader):
-    '''
-    recognize subtitle and mosaic
-    '''
-
-    frame_copy = frame.copy()
-    # recognize subtitle
-    result = reader.readtext(frame,
-                            detail=1,
-                            batch_size=10, # 批处理大小
-                            )
-
-    # mosaic subtitle
-    for item in result:
-        text = item[1]
-        if text.strip() and item[0] is not None and len(item[0]) == 4:
-            top_left = tuple(map(int, item[0][0]))
-            bottom_right = tuple(map(int, item[0][2]))
-            if is_overlap_over_half(base_rect, (top_left, bottom_right)):
-               frame_copy = mosaic.apply_perspective_background_color(frame=frame_copy,
-                                                                      x1=top_left[0],
-                                                                      y1=top_left[1],
-                                                                      x2=bottom_right[0],
-                                                                      y2=bottom_right[1],
-                                                                      extend_factor = 2)
-    
-    return frame_copy
 
 def make_frame_processor(frame,t:float,frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int],float]]],fps:int):
     frame_copy = frame.copy()

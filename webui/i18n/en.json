@@ -129,7 +129,7 @@
     "ignore_min_width":"ignore min width(pixel)",
     "ignore_min_height":"ignore min height(pixel)",
     "ignore_min_word_count":"ignore min word count",
-    "ignore_text":"ignore text",
+    "warning_text":"warning text",
     "all_mosaic":"all mosaic",
     "title_mosaic":"title mosaic",
     "warning_mosaic":"warning mosaic",

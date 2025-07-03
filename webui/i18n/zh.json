@@ -129,7 +129,7 @@
     "ignore_min_width":"可忽略最小宽度（像素）",
     "ignore_min_height":"可忽略最小高度（像素）",
     "ignore_min_word_count":"可忽略最少字数",
-    "ignore_text":"忽略文本",
+    "warning_text":"警告文本",
     "all_mosaic":"全部马赛克",
     "title_mosaic":"标题马赛克",
     "warning_mosaic":"警告马赛克",
