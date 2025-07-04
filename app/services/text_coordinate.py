@@ -248,12 +248,60 @@ def clusters_bboxes_dbscan(filtered_datas, merge_distance):
     
     return list(clusters.values())
 
+def is_rectangle_contained(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> bool:
+    """
+    判断矩形a是否包含矩形b
+    """
+    a_x1, a_y1, a_x2, a_y2 = a
+    b_x1, b_y1, b_x2, b_y2 = b
+    
+    return (b_x1 >= a_x1 and b_x2 <= a_x2 and 
+            b_y1 >= a_y1 and b_y2 <= a_y2)
+
+def frames_coordinate_type_recognize(frames_coordinate:dict, title_bbox:tuple[int,int,int,int],warning_bbox:tuple[int,int,int,int],subtitle_bbox:tuple[int,int,int,int]) -> dict:
+    if frames_coordinate is None:
+        return frames_coordinate
+    
+    result = {}
+
+    for time, coordinate in frames_coordinate.items():
+        region_item_list = []
+        for region in coordinate.get("coordinates", []):
+            if region is None or len(region) < 3:
+                continue
+            text = region[2]
+            bbox = region[0] + region[1]  # (x1, y1, x2, y2)
+            type = "other"
+            
+            # type recognize
+            if title_bbox and is_rectangle_contained(title_bbox, bbox):
+                type = "title"
+            elif warning_bbox and is_rectangle_contained(warning_bbox, bbox):
+                type = "warning"
+            elif subtitle_bbox and is_rectangle_contained(subtitle_bbox, bbox):
+                type = "subtitle"
+            
+            # build region item
+            region_item = {
+                "text": text,
+                "bbox": bbox,
+                "type": type
+            }
+            region_item_list.append(region_item)
+        
+        result[coordinate.get("index")] = {
+            "t": time,
+            "text_regions": region_item_list
+        }
+    
+    return result
+
 if __name__ == "__main__":
     """
     {
     "frames": {
-        "0": {
-            "t": 0,
+        0: {
+            t: 0,
             "text_regions": [
                 {
                     "text": "农场主花费高价买了只小奶牛",
@@ -279,8 +327,8 @@ if __name__ == "__main__":
         }
     },
     "time_index": {
-        "0.0": "0",
-        "0.033": "1"
+        0.0: 0,
+        0.033: 1
     },
     "fixed_regions": {
         "title": {
