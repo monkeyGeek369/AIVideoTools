@@ -7,7 +7,7 @@ from app.models.schema import VideoAspect, SubtitlePosition
 from collections import Counter,defaultdict
 from app.models.subtitle_position_coord import SubtitlePositionCoord
 from app.services import mosaic,paddleocr,subtitle,text_coordinate
-from app.utils import str_util
+from app.utils import str_util,file_utils
 import streamlit as st
 import json
 
@@ -55,6 +55,8 @@ def video_subtitle_overall_statistics(video_path:str,
     # frames coordinates
     frame_tmp_path = os.path.join(task_path, "frame_tmp")
     frame_subtitles_position = paddleocr.get_video_frames_coordinates(video_path,frame_tmp_path)
+    #file_utils.save_data_to_file(frame_subtitles_position,"video_ocr","/home/monkeygeek/文档/")
+    #frame_subtitles_position = file_utils.load_json_file(os.path.join("/home/monkeygeek/文档/", "video_ocr.json"))
 
     # filter: sub_rec_area
     frame_subtitles_position = subtitle.filter_frame_subtitles_position_by_area(sub_rec_area,frame_subtitles_position)
@@ -102,10 +104,22 @@ def video_subtitle_mosaic_auto(video_clip,subtitle_position_coord:SubtitlePositi
         return video_clip
 
     # get subtitle position
-    frame_subtitles_position = subtitle_position_coord.frame_subtitles_position
+    types = []
+    if all_mosaic:
+        types.append("title")
+        types.append("warning")
+        types.append("subtitle")
+        types.append("other")
+    if title_mosaic:
+        types.append("title")
+    if warning_mosaic:
+        types.append("warning")
+    if subtitle_mosaic:
+        types.append("subtitle")
+    if other_mosaic:
+        types.append("other")
+    frame_subtitles_position = text_coordinate.get_index_bboxs_by_types(subtitle_position_coord.frames,types)
     fps = video_clip.fps
-    # left_top = (subtitle_position_coord.left_top_x,subtitle_position_coord.left_top_y)
-    # right_bottom = (subtitle_position_coord.right_bottom_x,subtitle_position_coord.right_bottom_y)
 
     # load video
     return video_clip.fl(lambda gf, t: make_frame_processor(gf(t), t, frame_subtitles_position,fps))
@@ -119,42 +133,18 @@ def make_frame_processor(frame,t:float,frame_subtitles_position:dict[int,list[tu
     # if index == 170:
     #     print(index)
 
-    positions = get_real_subtitle_position(index,3,frame_subtitles_position)
+    positions = frame_subtitles_position.get(index)
 
-    for top_left, bottom_right,area in positions:
+    for item in positions:
         frame_copy = mosaic.telea_mosaic(frame=frame_copy,
-                                            x1=top_left[0],
-                                            y1=top_left[1],
-                                            x2=bottom_right[0],
-                                            y2=bottom_right[1])
+                                            x1=item[0],
+                                            y1=item[1],
+                                            x2=item[2],
+                                            y2=item[3])
     
     #cv2.imwrite(image_frame_path + f"/{index}-new.png", frame_copy)
 
     return frame_copy
-
-def get_real_subtitle_position(start_index:int,float_num:int,frame_subtitles_position:dict[int,list[tuple[tuple[int,int],tuple[int,int],float]]]):
-    positions = frame_subtitles_position.get(start_index, [])
-    area = sum(item[2] for item in positions)
-    if area > 0:
-        return positions
-
-    for num in range(float_num):
-        current_index = num + 1
-
-        # up
-        up_positions = frame_subtitles_position.get(start_index + current_index,[])
-        up_area = sum(item[2] for item in up_positions)
-        if up_area > area:
-            positions = up_positions
-            area = up_area
-        # down
-        down_positions = frame_subtitles_position.get(start_index - current_index,[])
-        down_area = sum(item[2] for item in down_positions)
-        if down_area > area:
-            positions = down_positions
-            area = down_area
-    
-    return positions
 
 def generate_video_by_images(video_size,image_folder, fps=24, duration=10,last_frame_duration=3):
     image_files = [os.path.join(image_folder, f) for f in os.listdir(image_folder) 

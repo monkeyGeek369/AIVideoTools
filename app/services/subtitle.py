@@ -327,7 +327,7 @@ def remove_valid_subtitles_by_ocr(subtitle_path:str):
         return
     
     # get subtitle time_texts
-    time_texts = {coordinates["t"]: [region["text"] for region in coordinates["text_regions"] if region.get("type") == "subtitle"] for frame_idx,coordinates in recognize_position_model.frames.items()}
+    time_texts = {float(coordinates["t"]) if type(coordinates["t"]) is str else coordinates["t"]: [region["text"] for region in coordinates["text_regions"] if region.get("type") == "subtitle"] for frame_idx,coordinates in recognize_position_model.frames.items()}
 
     # 第一步：准确生成OCR时间区间（可能多个不连续区间）格式为[(0，2.36,"你好"，2),(5.12，7.45,"你好呀"，10)]
     def generate_ocr_ranges(positions):

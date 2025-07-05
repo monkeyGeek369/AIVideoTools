@@ -296,6 +296,9 @@ def frames_coordinate_type_recognize(frames_coordinate:dict, title_bbox:tuple[in
     
     return result
 
+def get_index_bboxs_by_types(frames:dict,types:list[str])->dict:
+    return { index: [ region.get("bbox") for region in coordinate.get("text_regions") if region.get("type") in types] for index, coordinate in frames.items()}
+
 if __name__ == "__main__":
     """
     {

@@ -291,9 +291,10 @@ def get_subtitle_clips(video_clip) -> tuple:
     recognize_position_model = SubtitlePositionCoord.model_validate(recognize_poistion)
     recognize_height = video_clip.h // 2
     result_clip = video_clip
-    if recognize_position_model.is_exist:
-        heigh_dif_mid = int((recognize_position_model.right_bottom_y - recognize_position_model.left_top_y) / 2)
-        recognize_height = int(recognize_position_model.left_top_y + heigh_dif_mid)
+    subtitle_bbox = recognize_position_model.fixed_regions["subtitle"].get("bbox") if recognize_position_model.is_exist and recognize_position_model.fixed_regions and recognize_position_model.fixed_regions["subtitle"] else None
+    if subtitle_bbox:
+        heigh_dif_mid = int((subtitle_bbox[3] - subtitle_bbox[1]) / 2)
+        recognize_height = int(subtitle_bbox[1] + heigh_dif_mid)
 
     # base check
     subtitle_path = st.session_state.get("edit_subtitle_path",None)
@@ -325,7 +326,7 @@ def get_subtitle_clips(video_clip) -> tuple:
 
                 # 计算字幕位置
                 position = None
-                if subtitle_params['position'] == SubtitlePosition.ORIGIN and recognize_position_model.is_exist:
+                if subtitle_params['position'] == SubtitlePosition.ORIGIN and subtitle_bbox:
                     position = ('center',  recognize_height)
                 else:
                     position = video.calculate_subtitle_position(

@@ -8,6 +8,8 @@ from loguru import logger
 from app.utils import utils
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from app.models.file_info import LocalFileInfo
+from typing import Union
+import json
 
 def open_task_folder(root_dir, task_id):
     """打开任务文件夹
@@ -227,3 +229,40 @@ def create_zip(files: list, zip_path: str, base_dir: str = None, folder_name: st
     except Exception as e:
         logger.error(f"创建zip文件失败: {e}")
         return False
+
+def save_data_to_file(data: Union[str, dict, list],file_name:str, file_path:str,file_type:str='json') -> bool:
+    try:
+        os.makedirs(file_path, exist_ok=True)
+        full_path = os.path.join(file_path, f"{file_name}.{file_type}")
+        
+        if file_type.lower() == 'json':
+            if isinstance(data, (dict, list)):
+                json_data = json.dumps(data, ensure_ascii=False, indent=4)
+                with open(full_path, 'w', encoding='utf-8') as f:
+                    f.write(json_data)
+            else:
+                with open(full_path, 'w', encoding='utf-8') as f:
+                    f.write(data)
+        elif file_type.lower() == 'txt':
+            with open(full_path, 'w', encoding='utf-8') as f:
+                f.write(str(data))
+        else:
+            raise ValueError(f"不支持的文件类型: {file_type}")
+        
+        return True
+    except Exception as e:
+        print(f"保存文件时出错: {e}")
+        return False
+
+def load_json_file(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f, strict=False)
+    except FileNotFoundError:
+        print(f"错误：文件 {file_path} 不存在！")
+    except json.JSONDecodeError:
+        print("错误：文件内容不是有效的JSON格式！")
+    except Exception as e:
+        print(f"未知错误：{e}")
+    return None
+
